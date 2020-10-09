@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import simplejson as json
+import json
 from skimage.segmentation import felzenszwalb
 
 
