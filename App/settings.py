@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 from decouple import config
 import django_heroku
+import psycopg2
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -83,9 +85,13 @@ WSGI_APPLICATION = 'App.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
+DATABASE_URL = os.environ['DATABASE_URL']
+
+conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql', 
+        'ENGINE': 'django.db.backends.postgresql_psycopg2', 
         'NAME': 'de7332mb1osar1',
         'USER': 'qugwibsqubgwlj',
         'PASSWORD': 'efb3149abef5236cea18f02624869efb1475431e3ed4a855979fda7f6c6cbf53',
@@ -141,3 +147,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Activate Django-Heroku.
 django_heroku.settings(locals())
+
+import dj_database_url
+DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
