@@ -4,6 +4,8 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from skimage.segmentation import felzenszwalb
 from .models import User
+from .serializers import UserSerializer
+from rest_framework.viewsets import ModelViewSet
 
 
 def index(request):
@@ -22,22 +24,7 @@ def loadphoto(request):
         return HttpResponse("<h2>No photo yet</h2>")
 
 
-def get_all_users(request):
-    result = []
-    users = User.objects.all()
-    for user in users:
-        result.append({
-            'id': user.id,
-            'first_name': user.first_name,
-            'second_name': user.second_name,
-            'patronymic': user.patronymic,
-            'bitrh_date': user.birth_date,
-            'email': user.email,
-            'password': user.password,
-            'company': user.company,
-            'position': user.position,
-            'sex': user.sex,
-            'is_su': user.is_su,
-            'created_date': user.created_date,
-        })
-    return JsonResponse(result, safe=False)
+
+class UserViewSet(ModelViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
