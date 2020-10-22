@@ -33,8 +33,8 @@ DEBUG = config('DEBUG')
 ALLOWED_HOSTS = ['code-backend.herokuapp.com', '127.0.0.1', 'localhost:3000']
 
 CORS_ALLOWED_ORIGINS = [
-    'localhost:3000',
-    'code-backend.herokuapp.com'
+    'http://localhost:3000',
+    'https://core-frontend.herokuapp.com'
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
