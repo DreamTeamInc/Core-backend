@@ -37,6 +37,20 @@ CORS_ALLOWED_ORIGINS = [
     'https://core-frontend.herokuapp.com'
 ]
 
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'https://core-frontend.herokuapp.com'
+]
+
 CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOW_CREDENTIALS = True

@@ -66,12 +66,14 @@ def authentication(request):
         else:
             return JsonResponse({'isAuthorized': False})
     if request.method == 'POST':
-        email, password, isRemember = request.POST
+        email = request.POST['email']
+        password = request.POST['password']
+        isRemember = request.POST['isRemember']
         user = User.objects.filter(email=email)
         if len(user) == 0:
-            return JsonResponse({'isAuthoriezed': False})
+            return JsonResponse({'isAuthoriezed': False, 'erorr': 'wrong_email'})
         if password != user[0].password:
-            return JsonResponse({'isAuthoriezed': False})
+            return JsonResponse({'isAuthoriezed': False, 'erorr': 'wrong_password'})
         result = {
                 'isAuthorized': True,
                 'id': user[0].id,
