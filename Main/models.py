@@ -18,7 +18,7 @@ class User(models.Model):
   is_su = models.BooleanField()
   created_date = models.DateField(auto_now=True)
   
-  def __str___():
+  def __str___(self):
     return self.first_name
 
 
@@ -45,4 +45,5 @@ class Mask(models.Model):
   photo = models.ForeignKey(Photo, on_delete = models.CASCADE)
   classification_path = models.FilePathField() # ??? it's json 
   path = models.FilePathField()  # ??? it's numpy array
+  likes = models.PositiveSmallIntegerField()
   model = models.ManyToManyField(Model, db_table='Model_to_mask')
