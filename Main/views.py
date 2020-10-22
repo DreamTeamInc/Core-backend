@@ -40,8 +40,9 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
   queryset = User.objects.all()
 
 
+@csrf_exempt
 def authentication(request):
-     if request.method == 'GET':
+    if request.method == 'GET':
         if 'token' in request.COOKIES:
             value = request.COOKIES['token']
             user = User.objects.filter(id=value)
@@ -49,6 +50,7 @@ def authentication(request):
                 return JsonResponse({'isAuthoriezed': False})
             result = {
                 'isAuthorized': True,
+                'id': user[0].id,
                 'first_name': user[0].first_name,
                 'second_name': user[0].second_name,
                 'patronymic': user[0].patronymic,
@@ -63,3 +65,30 @@ def authentication(request):
             return JsonResponse(result)
         else:
             return JsonResponse({'isAuthorized': False})
+    if request.method == 'POST':
+        email, password, isRemember = request.POST
+        user = User.objects.filter(email=email)
+        if len(user) == 0:
+            return JsonResponse({'isAuthoriezed': False})
+        if password != user[0].password:
+            return JsonResponse({'isAuthoriezed': False})
+        result = {
+                'isAuthorized': True,
+                'id': user[0].id,
+                'first_name': user[0].first_name,
+                'second_name': user[0].second_name,
+                'patronymic': user[0].patronymic,
+                'birth_date': user[0].birth_date,
+                'email': user[0].email,
+                'company': user[0].company,
+                'position': user[0].position,
+                'sex':user[0].sex,
+                'is_su': user[0].is_su,
+                'created_date': user[0].created_date, 
+            }
+        response = JsonResponse(result)
+        maxAge = 10*60*60 if not isRemember else 6*60*60*24*30
+        response.set_cookie("token", user[0].id, max_age=maxAge)
+        return response
+        
+
