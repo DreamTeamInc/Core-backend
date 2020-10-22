@@ -4,8 +4,10 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from skimage.segmentation import felzenszwalb
 from .models import User
-from .serializers import UserSerializer
+# from .serializers import UserSerializer
 from rest_framework.viewsets import ModelViewSet
+from rest_framework import generics
+from .serializers import *
 
 
 def index(request):
@@ -24,10 +26,19 @@ def loadphoto(request):
         return HttpResponse("<h2>No photo yet</h2>")
 
 
+class UserCreateView(generics.CreateAPIView):
+  serializer_class = UserDetailSerializer
 
-class UserViewSet(ModelViewSet):
-    serializer_class = UserSerializer
-    queryset = User.objects.all()
+
+class UserListView(generics.ListAPIView):
+  serializer_class = UserListSerializer
+  queryset = User.objects.all()
+
+
+class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
+  serializer_class = UserDetailSerializer
+  queryset = User.objects.all()
+
 
 def authentication(request):
      if request.method == 'GET':
