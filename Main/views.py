@@ -28,3 +28,27 @@ def loadphoto(request):
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
+
+def authentication(request):
+     if request.method == 'GET':
+        if 'token' in request.COOKIES:
+            value = request.COOKIES['token']
+            user = User.objects.filter(id=value)
+            if len(user) == 0:
+                return JsonResponse({'isAuthoriezed': False})
+            result = {
+                'isAuthorized': True,
+                'first_name': user[0].first_name,
+                'second_name': user[0].second_name,
+                'patronymic': user[0].patronymic,
+                'birth_date': user[0].birth_date,
+                'email': user[0].email,
+                'company': user[0].company,
+                'position': user[0].position,
+                'sex':user[0].sex,
+                'is_su': user[0].is_su,
+                'created_date': user[0].created_date, 
+            }
+            return JsonResponse(result)
+        else:
+            return JsonResponse({'isAuthorized': False})
