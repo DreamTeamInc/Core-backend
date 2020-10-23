@@ -1,43 +1,76 @@
 from django.http import HttpResponse
 from django.http import JsonResponse
+from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 import json
-# from skimage.segmentation import felzenszwalb
-from .models import User
-# from .serializers import UserSerializer
-# from rest_framework.viewsets import ModelViewSet
+from .models import User, Photo
 from .serializers import *
 
 
-def index(request):
-    return HttpResponse("Hello World!")
-
-
-@csrf_exempt
-def loadphoto(request):
-    if request.method == "POST":
-        photo = request.FILES['file']
-        # segments = felzenszwalb(photo, scale=50, sigma=10, min_size=100)  # return numpy.ndarray
-        # lists = segments.tolist()
-        # json_str = json.dumps(lists)
-        return HttpResponse(photo, content_type = "multipart/form-data")
-    else:
-        return HttpResponse("<h2>No photo yet</h2>")
-
-
-class UserCreateView(generics.CreateAPIView):
+class CreateVUser(generics.CreateAPIView):
     serializer_class = UserDetailSerializer
 
 
-class UserListView(generics.ListAPIView):
+class GetAllUsers(generics.ListAPIView):
     serializer_class = UserListSerializer
     queryset = User.objects.all()
+    
 
-
-class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
+class PutGetDeleteOneUser(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserDetailSerializer
     queryset = User.objects.all()
+
+
+class GetAllLocations(generics.ListAPIView):
+    serializer_class = LocationListSerializer
+    queryset = Photo.objects.all()
+    def get(self, request):
+       locations = Photo.objects.all()
+       if len(locations) == 0:
+           return Response({"error": "no locations yet"})
+       serializer = LocationListSerializer(locations, many=True)
+       res = []
+       for location in serializer.data:
+           res.append(location["location"])
+       return Response({"locations": set(res)})
+
+
+class CreatePhoto(generics.CreateAPIView):
+    serializer_class = LocationDetailSerializer
+
+
+class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = LocationDetailSerializer
+    queryset = Photo.objects.all()
+
+
+class AllWells(generics.ListAPIView):
+    serializer_class = WellListSerializer
+    queryset = Photo.objects.all()
+    def get(self, request):
+       wells = Photo.objects.all()
+       if len(wells) == 0:
+           return Response({"error": "no wells yet"})
+       serializer =WellListSerializer(wells, many=True)
+       res = []
+       for well in serializer.data:
+           res.append(well["well"])
+       return Response({"wells": set(res)})
+
+
+class WellInLocation(generics.ListAPIView):
+    serializer_class = WellDetailSerializer
+    queryset = Photo.objects.all()
+    def get(self, request, location):
+       wells = Photo.objects.filter(location=location)
+       if len(wells) == 0:
+           return Response({"error": "no such wells in {0} location".format(location)})
+       serializer = WellDetailSerializer(wells, many=True)
+       res = []
+       for well in serializer.data:
+           res.append(well["well"])
+       return Response({"well": set(res)})
 
 
 @csrf_exempt

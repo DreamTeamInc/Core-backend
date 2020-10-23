@@ -10,9 +10,13 @@ from Main.views import *
 
 
 urlpatterns = [
-    path('users/create/', UserCreateView.as_view()),
-    path('users/all/', UserListView.as_view()),
-    path('users/detail/<int:pk>/', UserDetailView.as_view()),
+    path('users/create/', CreateVUser.as_view()),
+    path('users/all/', GetAllUsers.as_view()),
+    path('users/<int:pk>/', PutGetDeleteOneUser.as_view()),
     path('auth/', authentication),
-    # path('auth/', include('djoser.urls')),
+    path('locations/all', GetAllLocations.as_view()),
+    path('locations/<int:pk>/', PutGetDeleteOnePhoto.as_view()),
+    path('locations/create', CreatePhoto.as_view()),
+    path('wells/all', AllWells.as_view()),
+    path('wells/<location>', WellInLocation.as_view()),
 ]

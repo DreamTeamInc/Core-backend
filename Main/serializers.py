@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Photo
 
 
 # class UserSerializer(serializers.ModelSerializer):
@@ -10,11 +10,34 @@ from .models import User
 class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'second_name', "patronymic", "birth_date",
-        "email","company", "position", "sex", "is_su", "created_date")
+        exclude = ['password']
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
+        fields = '__all__'
+
+
+class LocationListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = '__all__'#['location']
+
+
+class LocationDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = '__all__'
+
+
+class WellListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = ['well']
+
+
+class WellDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
         fields = '__all__'
