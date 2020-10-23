@@ -93,3 +93,7 @@ def authentication(request):
         max_age = 10*60*60 if not isRemember else 6*60*60*24*30
         response.set_cookie("token", user[0].id, max_age=max_age)
         return response
+    if request.method == 'DELETE':
+        response = JsonResponse({'isAuthoriezed': False, 'status': 'OK'})
+        response.set_cookie("token", None)
+        return response    
