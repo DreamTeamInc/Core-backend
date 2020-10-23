@@ -8,12 +8,13 @@ from .models import User
 #     model = User
 #     fields = "__all__"
 class UserListSerializer(serializers.ModelSerializer):
-  class Meta:
-    model = User
-    fields = ('id', 'first_name', 'second_name')
+    class Meta:
+        model = User
+        fields = ('id', 'first_name', 'second_name', "patronymic", "birth_date",
+        "email","company", "position", "sex", "is_su", "created_date")
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
-  class Meta:
-    model = User
-    fields = '__all__'
+    class Meta:
+        model = User
+        fields = '__all__'

@@ -1,12 +1,12 @@
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import json
-from skimage.segmentation import felzenszwalb
+from rest_framework import generics
+# import json
+# from skimage.segmentation import felzenszwalb
 from .models import User
 # from .serializers import UserSerializer
-from rest_framework.viewsets import ModelViewSet
-from rest_framework import generics
+# from rest_framework.viewsets import ModelViewSet
 from .serializers import *
 
 
@@ -27,17 +27,17 @@ def loadphoto(request):
 
 
 class UserCreateView(generics.CreateAPIView):
-  serializer_class = UserDetailSerializer
+    serializer_class = UserDetailSerializer
 
 
 class UserListView(generics.ListAPIView):
-  serializer_class = UserListSerializer
-  queryset = User.objects.all()
+    serializer_class = UserListSerializer
+    queryset = User.objects.all()
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
-  serializer_class = UserDetailSerializer
-  queryset = User.objects.all()
+    serializer_class = UserDetailSerializer
+    queryset = User.objects.all()
 
 
 @csrf_exempt
@@ -60,7 +60,7 @@ def authentication(request):
                 'position': user[0].position,
                 'sex':user[0].sex,
                 'is_su': user[0].is_su,
-                'created_date': user[0].created_date, 
+                'created_date': user[0].created_date,
             }
             return JsonResponse(result)
         else:
@@ -86,11 +86,9 @@ def authentication(request):
                 'position': user[0].position,
                 'sex':user[0].sex,
                 'is_su': user[0].is_su,
-                'created_date': user[0].created_date, 
+                'created_date': user[0].created_date,
             }
         response = JsonResponse(result)
-        maxAge = 10*60*60 if not isRemember else 6*60*60*24*30
-        response.set_cookie("token", user[0].id, max_age=maxAge)
+        max_age = 10*60*60 if not isRemember else 6*60*60*24*30
+        response.set_cookie("token", user[0].id, max_age=max_age)
         return response
-        
-
