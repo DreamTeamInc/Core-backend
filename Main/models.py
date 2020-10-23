@@ -24,9 +24,10 @@ class User(models.Model):
 
 class Photo(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
-    photo_path = models.ImageField(upload_to='media/') # may be bugs bc of MEDIA_ROOT or MEDIA_URL
-    well= models.CharField(max_length=20)
+    photo_path = models.ImageField(upload_to='media/')
+    well = models.CharField(max_length=50)
     depth = models.IntegerField()
+    location = models.CharField(max_length=50)
     KINDS = (
       (1, 'daylight'),
       (2, 'ultraviolet'),
