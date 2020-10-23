@@ -43,7 +43,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 @csrf_exempt
 def authentication(request):
     if request.method == 'GET':
-        if 'token' in request.COOKIES:
+        if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
             value = request.COOKIES['token']
             user = User.objects.filter(id=value)
             if len(user) == 0:
@@ -96,4 +96,4 @@ def authentication(request):
     if request.method == 'DELETE':
         response = JsonResponse({'isAuthoriezed': False, 'status': 'OK'})
         response.set_cookie("token", None)
-        return response    
+        return response
