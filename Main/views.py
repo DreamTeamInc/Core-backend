@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
-# import json
+import json
 # from skimage.segmentation import felzenszwalb
 from .models import User
 # from .serializers import UserSerializer
@@ -66,9 +66,10 @@ def authentication(request):
         else:
             return JsonResponse({'isAuthorized': False})
     if request.method == 'POST':
-        email = request.POST['email']
-        password = request.POST['password']
-        isRemember = request.POST['isRemember']
+        req=json.loads(request.body)
+        email = req['email']
+        password = req['password']
+        isRemember = req['isRemember']
         user = User.objects.filter(email=email)
         if len(user) == 0:
             return JsonResponse({'isAuthoriezed': False, 'erorr': 'wrong_email'})
