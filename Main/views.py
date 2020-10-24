@@ -1,9 +1,8 @@
-from django.http import HttpResponse
+import json
 from django.http import JsonResponse
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
-import json
 from .models import User, Photo
 from .serializers import *
 
@@ -15,7 +14,7 @@ class CreateVUser(generics.CreateAPIView):
 class GetAllUsers(generics.ListAPIView):
     serializer_class = UserListSerializer
     queryset = User.objects.all()
-    
+
 
 class PutGetDeleteOneUser(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserDetailSerializer
@@ -26,14 +25,14 @@ class GetAllLocations(generics.ListAPIView):
     serializer_class = LocationListSerializer
     queryset = Photo.objects.all()
     def get(self, request):
-       locations = Photo.objects.all()
-       if len(locations) == 0:
-           return Response({"error": "no locations yet"})
-       serializer = LocationListSerializer(locations, many=True)
-       res = []
-       for location in serializer.data:
-           res.append(location["location"])
-       return Response({"locations": set(res)})
+        locations = Photo.objects.all()
+        if len(locations) == 0:
+            return Response({"error": "no locations yet"})
+        serializer = LocationListSerializer(locations, many=True)
+        res = []
+        for location in serializer.data:
+            res.append(location["location"])
+        return Response({"locations": set(res)})
 
 
 class CreatePhoto(generics.CreateAPIView):
@@ -49,28 +48,28 @@ class AllWells(generics.ListAPIView):
     serializer_class = WellListSerializer
     queryset = Photo.objects.all()
     def get(self, request):
-       wells = Photo.objects.all()
-       if len(wells) == 0:
-           return Response({"error": "no wells yet"})
-       serializer =WellListSerializer(wells, many=True)
-       res = []
-       for well in serializer.data:
-           res.append(well["well"])
-       return Response({"wells": set(res)})
+        wells = Photo.objects.all()
+        if len(wells) == 0:
+            return Response({"error": "no wells yet"})
+        serializer =WellListSerializer(wells, many=True)
+        res = []
+        for well in serializer.data:
+            res.append(well["well"])
+        return Response({"wells": set(res)})
 
 
 class WellInLocation(generics.ListAPIView):
     serializer_class = WellDetailSerializer
     queryset = Photo.objects.all()
     def get(self, request, location):
-       wells = Photo.objects.filter(location=location)
-       if len(wells) == 0:
-           return Response({"error": "no such wells in {0} location".format(location)})
-       serializer = WellDetailSerializer(wells, many=True)
-       res = []
-       for well in serializer.data:
-           res.append(well["well"])
-       return Response({"well": set(res)})
+        wells = Photo.objects.filter(location=location)
+        if len(wells) == 0:
+            return Response({"error": "no such wells in {0} location".format(location)})
+        serializer = WellDetailSerializer(wells, many=True)
+        res = []
+        for well in serializer.data:
+            res.append(well["well"])
+        return Response({"well": set(res)})
 
 
 @csrf_exempt
