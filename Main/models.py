@@ -16,7 +16,7 @@ class User(models.Model):
     )
     sex = models.IntegerField(choices=SEX)
     is_su = models.BooleanField()
-    created_date = models.DateField(auto_now=True)
+    created_date = models.DateField(auto_now_add=True)
 
     def __str___(self):
         return self.first_name
