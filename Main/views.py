@@ -105,6 +105,9 @@ class AllMaskByPhoto(generics.ListAPIView):
     serializer_class = MaskSerializer
     queryset = Mask.objects.all()
     def get(self, request, pk):
+        photos = Photo.objects.filter(id = pk)
+        if len(photos) == 0:
+            return Response({"error": "there is no photo with id {0}".format(pk)})
         masks = Mask.objects.filter(photo=pk)
         if len(masks) == 0:
             return Response({"error": "photo with id {0} has no masks".format(pk)})
@@ -117,22 +120,30 @@ class AllMaskByPhoto(generics.ListAPIView):
 
 @api_view(['PUT'])
 def GiveLike(request, pk, mask_id):
-    if request.method == 'PUT':
-        mask = Mask.objects.filter(photo=pk, id = mask_id).first()
-        mask.likes += 1
-        mask.save()
-        return Response({'likes': mask.likes})
+    photos = Photo.objects.filter(id = pk)
+    if len(photos) == 0:
+        return Response({"error": "there is no photo with id {0}".format(pk)})
+    mask = Mask.objects.filter(photo=pk, id = mask_id).first()
+    if mask == None:
+        return Response({"error": "photo {0} has no mask with id {1}".format(pk, mask_id)})
+    mask.likes += 1
+    mask.save()
+    return Response({'likes': mask.likes})
 
 
 @api_view(['PUT'])
 def DisLike(request, pk, mask_id):
-    if request.method == 'PUT':
-        mask = Mask.objects.filter(photo=pk, id = mask_id).first()
-        if mask.likes == 0:
-            return Response({'error': 'mask already has 0 likes'})
-        mask.likes -= 1
-        mask.save()
-        return Response({'likes': mask.likes})
+    photos = Photo.objects.filter(id = pk)
+    if len(photos) == 0:
+        return Response({"error": "there is no photo with id {0}".format(pk)})
+    mask = Mask.objects.filter(photo=pk, id = mask_id).first()
+    if mask == None:
+        return Response({"error": "photo {0} has no mask with id {1}".format(pk, mask_id)})
+    if mask.likes == 0:
+        return Response({'error': 'mask already has 0 likes'})
+    mask.likes -= 1
+    mask.save()
+    return Response({'likes': mask.likes})
 
 
 @csrf_exempt

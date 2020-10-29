@@ -19,7 +19,7 @@ urlpatterns = [
     path('model/all/', GetAllModels.as_view()),
     path('model/<int:pk>/', PutGetDeleteOneModel.as_view()),
     path('photo/<int:pk>/masks/', AllMaskByPhoto.as_view()),
-    path('photo/<int:pk>/like_mask/<int:mask_id>', GiveLike),
-    path('photo/<int:pk>/dislike_mask/<int:mask_id>', DisLike),
+    path('photo/<int:pk>/like_mask/<int:mask_id>/', GiveLike),
+    path('photo/<int:pk>/dislike_mask/<int:mask_id>/', DisLike),
 
 ]
