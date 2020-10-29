@@ -1,13 +1,14 @@
 import json
 from django.http import JsonResponse
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
-from .models import User, Photo
+from .models import User, Photo, Mask, Model
 from .serializers import *
 
 
-class CreateVUser(generics.CreateAPIView):
+class CreateUser(generics.CreateAPIView):
     serializer_class = UserDetailSerializer
 
 
@@ -70,6 +71,68 @@ class WellInLocation(generics.ListAPIView):
         for well in serializer.data:
             res.append(well["well"])
         return Response({"well": set(res)})
+
+
+class CreateMask(generics.CreateAPIView):
+    serializer_class = MaskSerializer
+
+
+class GetAllMasks(generics.ListAPIView):
+    serializer_class = MaskSerializer
+    queryset = Mask.objects.all()
+
+
+class PutGetDeleteOneMask(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = MaskSerializer
+    queryset = Mask.objects.all()
+
+
+class CreateModel(generics.CreateAPIView):
+    serializer_class = ModelSerializer
+
+
+class GetAllModels(generics.ListAPIView):
+    serializer_class = ModelSerializer
+    queryset = Model.objects.all()
+
+
+class PutGetDeleteOneModel(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ModelSerializer
+    queryset = Model.objects.all()
+
+
+class AllMaskByPhoto(generics.ListAPIView):
+    serializer_class = MaskSerializer
+    queryset = Mask.objects.all()
+    def get(self, request, pk):
+        masks = Mask.objects.filter(photo=pk)
+        if len(masks) == 0:
+            return Response({"error": "photo with id {0} has no masks".format(pk)})
+        serializer = MaskSerializer(masks, many=True)
+        res = []
+        for mask in serializer.data:
+            res.append(mask)
+        return Response({'masks': res})
+
+
+@api_view(['PUT'])
+def GiveLike(request, pk, mask_id):
+    if request.method == 'PUT':
+        mask = Mask.objects.filter(photo=pk, id = mask_id).first()
+        mask.likes += 1
+        mask.save()
+        return Response({'likes': mask.likes})
+
+
+@api_view(['PUT'])
+def DisLike(request, pk, mask_id):
+    if request.method == 'PUT':
+        mask = Mask.objects.filter(photo=pk, id = mask_id).first()
+        if mask.likes == 0:
+            return Response({'error': 'mask already has 0 likes'})
+        mask.likes -= 1
+        mask.save()
+        return Response({'likes': mask.likes})
 
 
 @csrf_exempt

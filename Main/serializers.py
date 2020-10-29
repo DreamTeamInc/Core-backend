@@ -1,12 +1,7 @@
 from rest_framework import serializers
-from .models import User, Photo
+from .models import User, Photo, Mask, Model
 
 
-# class UserSerializer(serializers.ModelSerializer):
-#   # user = serializers.HiddenField(default=serializers.CurrentUserDefault())
-#   class Meta:
-#     model = User
-#     fields = "__all__"
 class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -38,6 +33,24 @@ class WellListSerializer(serializers.ModelSerializer):
 
 
 class WellDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = '__all__'
+
+
+class MaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Mask
+        fields = '__all__'
+
+
+class ModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Model
+        fields = '__all__'
+
+
+class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Photo
         fields = '__all__'
