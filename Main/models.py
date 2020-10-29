@@ -44,7 +44,7 @@ class Model(models.Model):
 class Mask(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
     photo = models.ForeignKey(Photo, on_delete = models.CASCADE)
-    classification_path = models.FilePathField() # ??? it's json
-    path = models.FilePathField()  # ??? it's numpy array
+    classification_path = models.FileField(upload_to='media/') # ??? it's json
+    path = models.FileField(upload_to='media/')  # ??? it's numpy array
     likes = models.PositiveSmallIntegerField()
     model = models.ManyToManyField(Model, db_table='Model_to_mask')
