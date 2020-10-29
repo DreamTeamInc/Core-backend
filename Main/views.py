@@ -23,13 +23,13 @@ class PutGetDeleteOneUser(generics.RetrieveUpdateDestroyAPIView):
 
 
 class GetAllLocations(generics.ListAPIView):
-    serializer_class = LocationListSerializer
+    serializer_class =  PhotoSerializer
     queryset = Photo.objects.all()
     def get(self, request):
         locations = Photo.objects.all()
         if len(locations) == 0:
             return Response({"error": "no locations yet"})
-        serializer = LocationListSerializer(locations, many=True)
+        serializer =  PhotoSerializer(locations, many=True)
         res = []
         for location in serializer.data:
             res.append(location["location"])
@@ -37,11 +37,16 @@ class GetAllLocations(generics.ListAPIView):
 
 
 class CreatePhoto(generics.CreateAPIView):
-    serializer_class = LocationDetailSerializer
+    serializer_class =  PhotoSerializer
+
+
+class GetAllPhotos(generics.ListAPIView):
+    serializer_class =  PhotoSerializer
+    queryset = Photo.objects.all()
 
 
 class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = LocationDetailSerializer
+    serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
 
 

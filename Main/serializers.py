@@ -14,13 +14,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class LocationListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Photo
-        fields = '__all__'#['location']
-
-
-class LocationDetailSerializer(serializers.ModelSerializer):
+class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Photo
         fields = '__all__'
