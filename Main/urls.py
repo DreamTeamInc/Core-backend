@@ -1,4 +1,6 @@
 from django.urls import path
+from django.conf.urls.static import static
+from django.conf import settings
 from Main.views import *
 
 
@@ -22,5 +24,6 @@ urlpatterns = [
     path('photo/<int:pk>/masks/', AllMaskByPhoto.as_view()),
     path('photo/<int:pk>/like_mask/<int:mask_id>/', GiveLike),
     path('photo/<int:pk>/dislike_mask/<int:mask_id>/', DisLike),
-
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
