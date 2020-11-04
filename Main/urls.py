@@ -24,6 +24,7 @@ urlpatterns = [
     path('photo/<int:pk>/masks/', AllMaskByPhoto.as_view()),
     path('photo/<int:pk>/like_mask/<int:mask_id>/', GiveLike),
     path('photo/<int:pk>/dislike_mask/<int:mask_id>/', DisLike),
+    path('users/<int:pk>/model/all/', GetAllModelsByUser.as_view()),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

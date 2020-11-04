@@ -127,6 +127,20 @@ class GetAllModels(generics.ListAPIView):
     queryset = Model.objects.all()
 
 
+class GetAllModelsByUser(generics.ListAPIView):
+    serializer_class = ModelSerializer
+    queryset = Model.objects.all()
+    def get(self, request, pk):
+        user = User.objects.filter(id = pk)
+        if len(user) == 0:
+            return Response({"error": "there is no user with id {0}".format(pk)})
+        models = Model.objects.filter(user=pk)
+        if len(models) == 0:
+            return Response({"error": "user with id {0} has no models".format(pk)})
+        serializer = ModelSerializer(models, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
 class PutGetDeleteOneModel(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ModelSerializer
     queryset = Model.objects.all()
@@ -143,10 +157,7 @@ class AllMaskByPhoto(generics.ListAPIView):
         if len(masks) == 0:
             return Response({"error": "photo with id {0} has no masks".format(pk)})
         serializer = MaskSerializer(masks, many=True)
-        res = []
-        for mask in serializer.data:
-            res.append(mask)
-        return Response({'masks': res})
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['PUT'])
