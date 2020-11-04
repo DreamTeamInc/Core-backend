@@ -48,7 +48,7 @@ class CreatePhoto(generics.CreateAPIView):
         if "photo" in request.FILES:
             photo = request.FILES['photo']
         else:
-            return Response(data={"error":"no photo file in request"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={"error":"no photo field or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = PhotoSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
