@@ -114,19 +114,19 @@ conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2', 
-        'NAME': 'de7332mb1osar1',
-        'USER': 'qugwibsqubgwlj',
-        'PASSWORD': 'efb3149abef5236cea18f02624869efb1475431e3ed4a855979fda7f6c6cbf53',
-        'HOST': 'ec2-54-75-199-252.eu-west-1.compute.amazonaws.com',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': os.environ['NAME'],
+        'USER': os.environ['USER'],
+        'PASSWORD': os.environ['PASSWORD'],
+        'HOST': os.environ['HOST'],
+        'PORT': os.environ['PORT'],
     }
 }
 
 
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.mysql', 
+#         'ENGINE': 'django.db.backends.mysql',
 #         'NAME': config('NAME'),
 #         'USER': config('USER'),
 #         'PASSWORD': config('PASSWORD'),
