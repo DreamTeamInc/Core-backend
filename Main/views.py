@@ -67,26 +67,6 @@ class GetAllPhotos(generics.ListAPIView):
 class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
-    def get(self, request, pk):
-        photos = Photo.objects.filter(id = pk)
-        if len(photos) == 0:
-            return Response({"error": "no photo with id {0}".format(pk)})
-        photo = photos[0]
-        with open("Main\\media\\photos\\photo{0}.jpg".format(photo.id), 'wb') as imagefile:
-            imagefile.write(photo.photo)
-            # uv = UV_Model()
-            # f = io.imread("photo{0}.PNG".format(photo.id))
-            # mask = uv.predict(f)
-            # classifications = { 
-            #     "100" : "Отсутствует",
-            #     "200" : "Насыщенное",
-            #     "300" : "Карбонатное"
-            # }
-            # io.imshow(mask)
-            # plt.show() C:\Users\Егор\Desktop\KernMain\media\photos\photo14.jpg
-        root = str(BASE_DIR) + "\Main\media\photos\photo{0}.jpg".format(photo.id)
-        response = HttpResponse("<img src='{0}'>".format(root))
-        return response
 
 
 class AllWells(generics.ListAPIView):
