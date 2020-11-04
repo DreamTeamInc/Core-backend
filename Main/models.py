@@ -24,7 +24,7 @@ class User(models.Model):
 
 class Photo(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
-    photo_path = models.ImageField(upload_to='media/')
+    photo = models.BinaryField()
     well = models.CharField(max_length=50)
     depth = models.IntegerField()
     location = models.CharField(max_length=50)
@@ -38,13 +38,20 @@ class Photo(models.Model):
 class Model(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
     is_default = models.BooleanField()
+    is_active = models.BooleanField(default=False)
     name = models.CharField(max_length=50)
+    KINDS = (
+      (1, 'daylight'),
+      (2, 'ultraviolet'),
+    )
+    kind = models.IntegerField(choices=KINDS)
 
 
 class Mask(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
     photo = models.ForeignKey(Photo, on_delete = models.CASCADE)
-    classification_path = models.FileField(upload_to='media/') # ??? it's json
-    path = models.FileField(upload_to='media/')  # ??? it's numpy array
+    classification = models.TextField()
+    mask = models.TextField()
     likes = models.PositiveSmallIntegerField(default=0)
     model = models.ManyToManyField(Model, db_table='Model_to_mask')
+    users_who_like = models.ManyToManyField(User, db_table='Likes', related_name='likes') # mb related_name='email'?
