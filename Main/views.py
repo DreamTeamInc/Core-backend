@@ -1,11 +1,16 @@
 import json
-from django.http import JsonResponse
+from skimage import io
+from matplotlib import pyplot as plt
+from django.http import JsonResponse, HttpResponse
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 from .models import User, Photo, Mask, Model
 from .serializers import *
+from .DataSienceUV.UV_Model import UV_Model
+from App.settings import BASE_DIR
 
 
 class CreateUser(generics.CreateAPIView):
@@ -38,16 +43,50 @@ class GetAllLocations(generics.ListAPIView):
 
 class CreatePhoto(generics.CreateAPIView):
     serializer_class =  PhotoSerializer
+    def post(self, request):
+        photo = request.FILES['photo']
+        byte_photo = photo.read() # if too big image use this: for chunk in photo.chunks():   ...
+        try:
+            user = User.objects.get(id=request.data["user"])
+        except:
+            return Response({"error":"user does not exist"})
+        Photo.objects.create(photo=byte_photo,
+                             well=request.data["well"],
+                             depth=request.data["depth"],
+                             kind=request.data["kind"],
+                             location=request.data["location"],
+                             user=user)
+        return Response({"response": "photo was successfully created"})
 
 
 class GetAllPhotos(generics.ListAPIView):
-    serializer_class =  PhotoSerializer
+    serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
 
 
 class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
+    def get(self, request, pk):
+        photos = Photo.objects.filter(id = pk)
+        if len(photos) == 0:
+            return Response({"error": "no photo with id {0}".format(pk)})
+        photo = photos[0]
+        with open("Main\\media\\photos\\photo{0}.jpg".format(photo.id), 'wb') as imagefile:
+            imagefile.write(photo.photo)
+            # uv = UV_Model()
+            # f = io.imread("photo{0}.PNG".format(photo.id))
+            # mask = uv.predict(f)
+            # classifications = { 
+            #     "100" : "Отсутствует",
+            #     "200" : "Насыщенное",
+            #     "300" : "Карбонатное"
+            # }
+            # io.imshow(mask)
+            # plt.show() C:\Users\Егор\Desktop\KernMain\media\photos\photo14.jpg
+        root = str(BASE_DIR) + "\Main\media\photos\photo{0}.jpg".format(photo.id)
+        response = HttpResponse("<img src='{0}'>".format(root))
+        return response
 
 
 class AllWells(generics.ListAPIView):
@@ -57,7 +96,7 @@ class AllWells(generics.ListAPIView):
         wells = Photo.objects.all()
         if len(wells) == 0:
             return Response({"error": "no wells yet"})
-        serializer =WellListSerializer(wells, many=True)
+        serializer = WellListSerializer(wells, many=True)
         res = []
         for well in serializer.data:
             res.append(well["well"])
