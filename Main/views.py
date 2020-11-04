@@ -44,7 +44,11 @@ class GetAllLocations(generics.ListAPIView):
 class CreatePhoto(generics.CreateAPIView):
     serializer_class =  PhotoSerializer
     def post(self, request):
-        photo = request.FILES['photo']
+        photo = ''
+        if "photo" in request.FILES:
+            photo = request.FILES['photo']
+        else:
+            return Response(data={"error":"no photo file in request"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = PhotoSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
