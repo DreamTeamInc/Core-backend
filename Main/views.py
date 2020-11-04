@@ -45,6 +45,9 @@ class CreatePhoto(generics.CreateAPIView):
     serializer_class =  PhotoSerializer
     def post(self, request):
         photo = request.FILES['photo']
+        serializer = PhotoSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         byte_photo = photo.read() # if too big image use this: for chunk in photo.chunks():   ...
         try:
             user = User.objects.get(id=request.data["user"])
