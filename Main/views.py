@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 from .models import User, Photo, Mask, Model
 from .serializers import *
-from .DataSienceUV.UV_Model import UV_Model
+# from .DataSienceUV.UV_Model import UV_Model
 from App.settings import BASE_DIR
 
 
