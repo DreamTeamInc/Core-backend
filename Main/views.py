@@ -160,6 +160,20 @@ class AllMaskByPhoto(generics.ListAPIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
+class AllPhotoByLocation(generics.ListAPIView):
+    serializer_class = PhotoSerializer
+    def get_queryset(self):
+        location = self.kwargs['location']
+        return Photo.objects.filter(location=location)
+
+
+class AllPhotoByWell(generics.ListAPIView):
+    serializer_class = PhotoSerializer
+    def get_queryset(self):
+        well = self.kwargs['well']
+        return Photo.objects.filter(well=well)
+
+
 @api_view(['PUT'])
 def GiveLike(request, pk, mask_id):
     photos = Photo.objects.filter(id = pk)
