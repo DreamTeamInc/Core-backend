@@ -11,6 +11,7 @@ from .models import User, Photo, Mask, Model
 from .serializers import *
 # from .DataSienceUV.UV_Model import UV_Model
 from App.settings import BASE_DIR
+# from .DataSienceDaylight.model import DayModel
 
 
 class CreateUser(generics.CreateAPIView):
@@ -69,11 +70,41 @@ class CreatePhoto(generics.CreateAPIView):
 class GetAllPhotos(generics.ListAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
-
+    
 
 class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
+    # def get(self, request, pk):
+        # photos = Photo.objects.filter(id = pk)
+        # if len(photos) == 0:
+        #     return Response({"error": "no photo with id {0}".format(pk)})
+        # photo = photos[0]
+        # with open("Main\\media\\photos\\photo{0}.jpg".format(photo.id), 'wb') as imagefile:
+        #     imagefile.write(photo.photo)
+            # uv = UV_Model()
+            # f = io.imread("photo{0}.PNG".format(photo.id))
+            # mask = uv.predict(f)
+            # classifications = { 
+            #     "100" : "Отсутствует",
+            #     "200" : "Насыщенное",
+            #     "300" : "Карбонатное"
+            # }
+            # io.imshow(mask)
+            # plt.show() C:\Users\Егор\Desktop\KernMain\media\photos\photo14.jpg
+        # root = str(BASE_DIR) + "\Main\media\photos\photo{0}.jpg".format(photo.id)
+        # response = HttpResponse("<img src='{0}'>".format(root))
+        # return response
+
+        
+def testDayModel(request):
+    # print("Hey1")
+    # model = DayModel("Main\\DataSienceDaylight\\segmentator_sab.pt")
+    # print("Hey2")
+    # res = model.predict("Main\\DataSienceDaylight\\1006722.jpg")
+    # print("Hey3")
+    # io.imshow(res)
+    return Response("Good")
 
 
 class AllWells(generics.ListAPIView):
@@ -175,20 +206,29 @@ class AllPhotoByWell(generics.ListAPIView):
 
 
 @api_view(['PUT'])
-def GiveLike(request, pk, mask_id):
+def GiveLike(request, user_id, pk, mask_id):
+    user = User.objects.filter(id=user_id)
+    if user.count() == 0:
+        return Response({"error": "there is no user with id {0}".format(user_id)})
     photos = Photo.objects.filter(id = pk)
     if len(photos) == 0:
         return Response({"error": "there is no photo with id {0}".format(pk)})
     mask = Mask.objects.filter(photo=pk, id = mask_id).first()
     if mask == None:
         return Response({"error": "photo {0} has no mask with id {1}".format(pk, mask_id)})
+    if user[0] in mask.users_who_like.all():
+        return Response({"error":"user with id {0} has already liked this mask".format(user_id)})
+    mask.users_who_like.add(user_id)
     mask.likes += 1
     mask.save()
     return Response({'likes': mask.likes})
 
 
 @api_view(['PUT'])
-def DisLike(request, pk, mask_id):
+def DisLike(request, user_id, pk, mask_id):
+    user = User.objects.filter(id=user_id)
+    if user.count() == 0:
+        return Response({"error": "there is no user with id {0}".format(user_id)})
     photos = Photo.objects.filter(id = pk)
     if len(photos) == 0:
         return Response({"error": "there is no photo with id {0}".format(pk)})
@@ -197,6 +237,9 @@ def DisLike(request, pk, mask_id):
         return Response({"error": "photo {0} has no mask with id {1}".format(pk, mask_id)})
     if mask.likes == 0:
         return Response({'error': 'mask already has 0 likes'})
+    if user[0] not in mask.users_who_like.all():
+        return Response({"error":"user with id {0} has already disliked this mask or hasn't liked it yet".format(user_id)})
+    mask.users_who_like.remove(user_id)
     mask.likes -= 1
     mask.save()
     return Response({'likes': mask.likes})
