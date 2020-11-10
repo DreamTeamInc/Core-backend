@@ -9,7 +9,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from skimage.color import rgb2hsv,rgb2gray
 from collections import OrderedDict
 
-uv_data = pd.read_csv('Main\\DataSienceUV\\uv_data.csv')
+uv_data = pd.read_csv('Main/DataSienceUV/uv_data.csv')
 
 
 class UV_Model(object):
