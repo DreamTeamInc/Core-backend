@@ -1,4 +1,5 @@
 import pandas as pd
+from joblib import dump, load
 import numpy as np
 import io
 from sklearn.model_selection import train_test_split
@@ -21,7 +22,7 @@ class UV_Model(object):
       self.etc = ExtraTreesClassifier(criterion='gini',min_samples_split=3) #warm_start=True
       self.etc.fit(self.features,self.y)
     else:
-      self.etc = load(model)    
+      self.etc = load(model)
 
   def __histogram_equalize(self,img): 
     img_cdf, bin_centers = exposure.cumulative_distribution(img) 

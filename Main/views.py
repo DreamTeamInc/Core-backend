@@ -125,6 +125,7 @@ def useUFmodel(request, user_id, pk, model_id):
         "200" : "Насыщенное",
         "300" : "Карбонатное"
     }
+    #mask = np.load("Main/uf.npz")['data']
     mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
     mask_rgb[:,:,0] = mask * 255
     mask_rgb[:,:,1] = mask * 255
