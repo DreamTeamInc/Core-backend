@@ -1,15 +1,18 @@
 import json
+import numpy as np
+from PIL import Image
 from skimage import io
+import io as IO
 from matplotlib import pyplot as plt
 from django.http import JsonResponse, HttpResponse
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import generics
+from django.shortcuts import get_object_or_404
 from .models import User, Photo, Mask, Model
 from .serializers import *
-# from .DataSienceUV.UV_Model import UV_Model
+from .DataSienceUV.UV_Model import UV_Model
 from App.settings import BASE_DIR
 # from .DataSienceDaylight.model import DayModel
 
@@ -54,10 +57,7 @@ class CreatePhoto(generics.CreateAPIView):
         if not serializer.is_valid():
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         byte_photo = photo.read() # if too big image use this: for chunk in photo.chunks():   ...
-        try:
-            user = User.objects.get(id=request.data["user"])
-        except:
-            return Response({"error":"user does not exist"})
+        user = get_object_or_404(User, id=request.data["user"])
         Photo.objects.create(photo=byte_photo,
                              well=request.data["well"],
                              depth=request.data["depth"],
@@ -100,13 +100,48 @@ class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
 
         
 def testDayModel(request):
-#     print("Hey1")
-#     model = DayModel("Main\\DataSienceDaylight\\segmentator_sab.pt")
-#     print("Hey2")
-#     res = model.predict("Main\\DataSienceDaylight\\1006722.jpg")
-#     print("Hey3")
-#     io.imshow(res)
+    # print("Hey1")
+    # model = DayModel("Main\\DataSienceDaylight\\segmentator_sab.pt")
+    # print("Hey2")
+    # res = model.predict("Main\\DataSienceDaylight\\1006722.jpg")
+    # print("Hey3")
+    # io.imshow(res)
     return Response("Good")
+
+
+@api_view(['GET'])
+def useUFmodel(request, user_id, pk, model_id):
+    user = get_object_or_404(User, id=user_id)
+    model = get_object_or_404(Model, id=model_id)
+    photo = get_object_or_404(Photo, id = pk)
+    if model.kind != photo.kind:
+        return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
+    with open("Main/media/photos/photo{0}.jpg".format(photo.id), 'wb') as imagefile:
+        imagefile.write(photo.photo)
+    uv = UV_Model()
+    f = io.imread("Main/media/photos/photo{0}.jpg".format(photo.id))
+    mask = uv.predict(f)
+    classification = { 
+        "100" : "Отсутствует",
+        "200" : "Насыщенное",
+        "300" : "Карбонатное"
+    }
+    #mask = np.load("Main/uf.npz")['data']
+    mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
+    mask_rgb[:,:,0] = mask
+    mask_rgb[:,:,1] = mask
+    mask_rgb[:,:,2] = mask
+    im = Image.fromarray(mask_rgb, 'RGB')
+    # im.save("image.png", "png")
+    # im = Image.open('image.png')
+    # a = np.asarray(im)
+    b = IO.BytesIO()
+    im.save(b, 'png')
+    im_bytes = b.getvalue()
+    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
+    mask.model.add(model)
+    serializer = MaskSerializer(mask)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class AllWells(generics.ListAPIView):
@@ -224,6 +259,7 @@ def addMask(request, user_id, pk):
     serializer = ModelSerializer(model[0], many=False)
     return Response(data=serializer.data)
 
+
 @api_view(['PUT'])
 def removeMask(request, user_id, pk): 
     user = User.objects.filter(id=user_id)
@@ -240,7 +276,6 @@ def removeMask(request, user_id, pk):
     model[0].mask_set.remove(mask[0])
     serializer = ModelSerializer(model[0], many=False)
     return Response(data=serializer.data)
-
 
 
 @api_view(['PUT'])

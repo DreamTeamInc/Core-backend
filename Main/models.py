@@ -51,7 +51,7 @@ class Mask(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
     photo = models.ForeignKey(Photo, on_delete = models.CASCADE)
     classification = models.TextField()
-    mask = models.TextField()
+    mask = models.BinaryField()
     likes = models.PositiveSmallIntegerField(default=0)
     model = models.ManyToManyField(Model, db_table='Model_to_mask')
     users_who_like = models.ManyToManyField(User, db_table='Likes', related_name='likes') # mb related_name='email'?
