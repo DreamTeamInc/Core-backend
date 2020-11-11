@@ -1,11 +1,17 @@
 import json
-from django.http import JsonResponse
+from skimage import io
+from matplotlib import pyplot as plt
+from django.http import JsonResponse, HttpResponse
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 from .models import User, Photo, Mask, Model
 from .serializers import *
+# from .DataSienceUV.UV_Model import UV_Model
+from App.settings import BASE_DIR
+# from .DataSienceDaylight.model import DayModel
 
 
 class CreateUser(generics.CreateAPIView):
@@ -38,16 +44,69 @@ class GetAllLocations(generics.ListAPIView):
 
 class CreatePhoto(generics.CreateAPIView):
     serializer_class =  PhotoSerializer
+    def post(self, request):
+        photo = ''
+        if "photo" in request.FILES:
+            photo = request.FILES['photo']
+        else:
+            return Response(data={"error":"no photo field or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = PhotoSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        byte_photo = photo.read() # if too big image use this: for chunk in photo.chunks():   ...
+        try:
+            user = User.objects.get(id=request.data["user"])
+        except:
+            return Response({"error":"user does not exist"})
+        Photo.objects.create(photo=byte_photo,
+                             well=request.data["well"],
+                             depth=request.data["depth"],
+                             kind=request.data["kind"],
+                             location=request.data["location"],
+                             user=user)
+        return Response({"response": "photo was successfully created"})
 
 
 class GetAllPhotos(generics.ListAPIView):
-    serializer_class =  PhotoSerializer
+    serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
-
+    
 
 class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
+    # def get(self, request, pk):
+    #     photos = Photo.objects.filter(id = pk)
+    #     # if len(photos) == 0:
+    #     #     return Response({"error": "no photo with id {0}".format(pk)})
+    #     photo = photos[0]
+    #     # with open("Main/media/photos/photo{0}.jpg".format(photo.id), 'wb') as imagefile:
+    #     #     imagefile.write(photo.photo)
+    #     uv = UV_Model()
+    #     f = io.imread("Main/media/photos/photo14.jpg".format(photo.id))
+    #     mask = uv.predict(f)
+    #     classifications = { 
+    #         "100" : "Отсутствует",
+    #         "200" : "Насыщенное",
+    #         "300" : "Карбонатное"
+    #     }
+    #     print("hey")
+    #     io.imshow(mask)
+    #     plt.show()
+    #     # root = str(BASE_DIR) + "\Main\media\photos\photo{0}.jpg".format(photo.id)
+    #     # response = HttpResponse("<img src='{0}'>".format(root))
+    #     # return response
+    #     return Response("Good")
+
+        
+def testDayModel(request):
+#     print("Hey1")
+#     model = DayModel("Main\\DataSienceDaylight\\segmentator_sab.pt")
+#     print("Hey2")
+#     res = model.predict("Main\\DataSienceDaylight\\1006722.jpg")
+#     print("Hey3")
+#     io.imshow(res)
+    return Response("Good")
 
 
 class AllWells(generics.ListAPIView):
@@ -57,7 +116,7 @@ class AllWells(generics.ListAPIView):
         wells = Photo.objects.all()
         if len(wells) == 0:
             return Response({"error": "no wells yet"})
-        serializer =WellListSerializer(wells, many=True)
+        serializer = WellListSerializer(wells, many=True)
         res = []
         for well in serializer.data:
             res.append(well["well"])
@@ -101,6 +160,20 @@ class GetAllModels(generics.ListAPIView):
     queryset = Model.objects.all()
 
 
+class GetAllModelsByUser(generics.ListAPIView):
+    serializer_class = ModelSerializer
+    queryset = Model.objects.all()
+    def get(self, request, pk):
+        user = User.objects.filter(id = pk)
+        if len(user) == 0:
+            return Response({"error": "there is no user with id {0}".format(pk)})
+        models = Model.objects.filter(user=pk)
+        if len(models) == 0:
+            return Response({"error": "user with id {0} has no models".format(pk)})
+        serializer = ModelSerializer(models, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
 class PutGetDeleteOneModel(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ModelSerializer
     queryset = Model.objects.all()
@@ -117,27 +190,83 @@ class AllMaskByPhoto(generics.ListAPIView):
         if len(masks) == 0:
             return Response({"error": "photo with id {0} has no masks".format(pk)})
         serializer = MaskSerializer(masks, many=True)
-        res = []
-        for mask in serializer.data:
-            res.append(mask)
-        return Response({'masks': res})
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class AllPhotoByLocation(generics.ListAPIView):
+    serializer_class = PhotoSerializer
+    def get_queryset(self):
+        location = self.kwargs['location']
+        return Photo.objects.filter(location=location)
+
+
+class AllPhotoByWell(generics.ListAPIView):
+    serializer_class = PhotoSerializer
+    def get_queryset(self):
+        well = self.kwargs['well']
+        return Photo.objects.filter(well=well)
 
 
 @api_view(['PUT'])
-def GiveLike(request, pk, mask_id):
+def addMask(request, user_id, pk): 
+    user = User.objects.filter(id=user_id)
+    if user.count() == 0:
+        return Response({"error":"no user with id {0}".format(user_id)})
+    mask = Mask.objects.filter(id=pk)
+    if mask.count() == 0:
+        return Response({"error":"no mask with id {0}".format(pk)})
+    model = Model.objects.filter(is_active=True, user=user_id)
+    if model.count() == 0:
+        return Response({"error":"user {0} has no active model".format(user_id)})
+    if model.count() > 1:
+        return Response({"error":"user {0} has more than one active models".format(user_id)})
+    model[0].mask_set.add(mask[0])
+    serializer = ModelSerializer(model[0], many=False)
+    return Response(data=serializer.data)
+
+@api_view(['PUT'])
+def removeMask(request, user_id, pk): 
+    user = User.objects.filter(id=user_id)
+    if user.count() == 0:
+        return Response({"error":"no user with id {0}".format(user_id)})
+    mask = Mask.objects.filter(id=pk)
+    if mask.count() == 0:
+        return Response({"error":"no mask with id {0}".format(pk)})
+    model = Model.objects.filter(is_active=True, user=user_id)
+    if model.count() == 0:
+        return Response({"error":"user {0} has no active model".format(user_id)})
+    if model.count() > 1:
+        return Response({"error":"user {0} has more than one active models".format(user_id)})
+    model[0].mask_set.remove(mask[0])
+    serializer = ModelSerializer(model[0], many=False)
+    return Response(data=serializer.data)
+
+
+
+@api_view(['PUT'])
+def like(request, user_id, pk, mask_id):
+    user = User.objects.filter(id=user_id)
+    if user.count() == 0:
+        return Response({"error": "there is no user with id {0}".format(user_id)})
     photos = Photo.objects.filter(id = pk)
     if len(photos) == 0:
         return Response({"error": "there is no photo with id {0}".format(pk)})
     mask = Mask.objects.filter(photo=pk, id = mask_id).first()
     if mask == None:
         return Response({"error": "photo {0} has no mask with id {1}".format(pk, mask_id)})
+    if user[0] in mask.users_who_like.all():
+        return Response({"error":"user with id {0} has already liked this mask".format(user_id)})
+    mask.users_who_like.add(user_id)
     mask.likes += 1
     mask.save()
     return Response({'likes': mask.likes})
 
 
 @api_view(['PUT'])
-def DisLike(request, pk, mask_id):
+def disike(request, user_id, pk, mask_id):
+    user = User.objects.filter(id=user_id)
+    if user.count() == 0:
+        return Response({"error": "there is no user with id {0}".format(user_id)})
     photos = Photo.objects.filter(id = pk)
     if len(photos) == 0:
         return Response({"error": "there is no photo with id {0}".format(pk)})
@@ -146,6 +275,9 @@ def DisLike(request, pk, mask_id):
         return Response({"error": "photo {0} has no mask with id {1}".format(pk, mask_id)})
     if mask.likes == 0:
         return Response({'error': 'mask already has 0 likes'})
+    if user[0] not in mask.users_who_like.all():
+        return Response({"error":"user with id {0} has already disliked this mask or hasn't liked it yet".format(user_id)})
+    mask.users_who_like.remove(user_id)
     mask.likes -= 1
     mask.save()
     return Response({'likes': mask.likes})

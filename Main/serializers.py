@@ -39,12 +39,7 @@ class MaskSerializer(serializers.ModelSerializer):
 
 
 class ModelSerializer(serializers.ModelSerializer):
+    mask_set = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     class Meta:
         model = Model
-        fields = '__all__'
-
-
-class PhotoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Photo
         fields = '__all__'
