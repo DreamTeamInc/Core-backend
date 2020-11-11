@@ -2,6 +2,7 @@ import json
 import numpy as np
 from PIL import Image
 from skimage import io
+import io as IO
 from matplotlib import pyplot as plt
 from django.http import JsonResponse, HttpResponse
 from rest_framework import status, generics
@@ -127,17 +128,20 @@ def useUFmodel(request, user_id, pk, model_id):
     }
     #mask = np.load("Main/uf.npz")['data']
     mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
-    mask_rgb[:,:,0] = mask * 255
-    mask_rgb[:,:,1] = mask * 255
-    mask_rgb[:,:,2] = mask * 255
+    mask_rgb[:,:,0] = mask
+    mask_rgb[:,:,1] = mask
+    mask_rgb[:,:,2] = mask
     im = Image.fromarray(mask_rgb, 'RGB')
-    im.show()
-    return Response("Good")
-    # io.imshow(mask)
-    # plt.show()
-    # mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=mask)
-    # mask.model.add(model)
-    # return Response(data={"id":mask.id, "classification": mask.classification, "mask":mask.mask}, status=status.HTTP_200_OK)
+    # im.save("image.png", "png")
+    # im = Image.open('image.png')
+    # a = np.asarray(im)
+    b = IO.BytesIO()
+    im.save(b, 'png')
+    im_bytes = b.getvalue()
+    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
+    mask.model.add(model)
+    serializer = MaskSerializer(mask)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class AllWells(generics.ListAPIView):
