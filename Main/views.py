@@ -4,12 +4,13 @@ from PIL import Image
 from skimage import io
 import io as IO
 from matplotlib import pyplot as plt
-from django.http import JsonResponse, HttpResponse
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from .models import User, Photo, Mask, Model
 from .serializers import *
 from .DataSienceUV.UV_Model import UV_Model
@@ -98,7 +99,6 @@ class GetAllPhotos(generics.ListAPIView):
     #     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-
 class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
@@ -132,11 +132,14 @@ def useUFmodel(request, photo_id, model_id):
     photo = photo[0]
     if model.kind != photo.kind:
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
-    with open("photo{0}.jpg".format(photo.id), 'wb') as imagefile:
+    with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         uv = UV_Model()
         f = io.imread(imagefile.name)
     mask = uv.predict(f)
+    # print(mask.shape)
+    # a = np.unique(mask)
+    # print(a)
     classification = { 
         "100" : "Отсутствует",
         "200" : "Насыщенное",
@@ -148,6 +151,7 @@ def useUFmodel(request, photo_id, model_id):
     mask_rgb[:,:,1] = mask
     mask_rgb[:,:,2] = mask
     im = Image.fromarray(mask_rgb, 'RGB')
+    # im.show
     # im.save("image.png", "png")
     # im = Image.open('image.png')
     # a = np.asarray(im)
@@ -156,9 +160,16 @@ def useUFmodel(request, photo_id, model_id):
     im_bytes = b.getvalue()
     mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
     mask.model.add(model)
+    # with open("mask{0}.png".format(photo.id), "wb") as f:
+    #     f.write(mask.mask)
+    # f = io.imread(f.name)
+    # print(f.shape)
+    # classes = np.unique(f)
+    # print(classes)
     serializer = MaskSerializer(mask)
     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+    # return Response("Good")
 
 class AllWells(generics.ListAPIView):
     serializer_class = WellListSerializer
@@ -218,7 +229,7 @@ class GetAllModelsByUser(generics.ListAPIView):
         user = User.objects.filter(id = pk)
         if len(user) == 0:
             return Response({"error": "there is no user with id {0}".format(pk)})
-        models = Model.objects.filter(user=pk)
+        models = Model.objects.filter(Q(user=pk) | Q(is_default=True))
         if len(models) == 0:
             return Response({"error": "user with id {0} has no models".format(pk)})
         serializer = ModelSerializer(models, many=True)
