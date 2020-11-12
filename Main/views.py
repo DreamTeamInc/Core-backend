@@ -69,7 +69,7 @@ class CreatePhoto(generics.CreateAPIView):
 
 class GetAllPhotos(generics.ListAPIView):
     serializer_class = PhotoSerializer
-    filterset_fields = ['kind', 'location']
+    filterset_fields = ['kind', 'location', 'well']
 
     def get_queryset(self):
         queryset = Photo.objects.all()
