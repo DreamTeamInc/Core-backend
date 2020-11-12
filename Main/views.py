@@ -70,14 +70,15 @@ class CreatePhoto(generics.CreateAPIView):
 class GetAllPhotos(generics.ListAPIView):
     serializer_class = PhotoSerializer
     filterset_fields = ['kind', 'location']
+
     def get_queryset(self):
         queryset = Photo.objects.all()
         tagged = self.request.query_params.get('tagged', None)
         user_id = 0
         if 'token' in self.request.COOKIES and  self.request.COOKIES['token'] != 'None':
             user_id = self.request.COOKIES['token']
-        else:
-            raise ValueError("No token")
+        # else:
+        #     raise ValueError("No token")
         if tagged is not None:
             if tagged == "Размеченные":
                 queryset = queryset.filter(mask__isnull=False).distinct()
@@ -88,13 +89,13 @@ class GetAllPhotos(generics.ListAPIView):
             elif tagged == "Неразмеченные мной":
                 queryset = queryset.filter(user=user_id).filter(mask__isnull=True)
         return queryset
-    def get(self, request):
-        try:
-            queryset = self.get_queryset()
-        except ValueError as e:
-            return Response(data={"error:":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
-        serializer = self.serializer_class(queryset, many=True)
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+    # def get(self, request):
+    #     try:
+    #         queryset = self.get_queryset()
+    #     except ValueError as e:
+    #         return Response(data={"error:":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+    #     serializer = self.serializer_class(queryset, many=True)
+    #     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 
