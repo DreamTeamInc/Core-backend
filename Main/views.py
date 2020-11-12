@@ -69,34 +69,38 @@ class CreatePhoto(generics.CreateAPIView):
 
 class GetAllPhotos(generics.ListAPIView):
     serializer_class = PhotoSerializer
-    queryset = Photo.objects.all()
-    
+    filterset_fields = ['kind', 'location']
+    def get_queryset(self):
+        queryset = Photo.objects.all()
+        tagged = self.request.query_params.get('tagged', None)
+        user_id = 0
+        if 'token' in self.request.COOKIES and  self.request.COOKIES['token'] != 'None':
+            user_id = self.request.COOKIES['token']
+        else:
+            raise ValueError("No token")
+        if tagged is not None:
+            if tagged == "Размеченные":
+                queryset = queryset.filter(mask__isnull=False).distinct()
+            elif tagged == "Неразмеченные":
+                queryset = queryset.filter(mask__isnull=True)
+            elif tagged == "Размеченные мной":
+                queryset = queryset.filter(user=user_id).filter(mask__isnull=False).distinct()
+            elif tagged == "Неразмеченные мной":
+                queryset = queryset.filter(user=user_id).filter(mask__isnull=True)
+        return queryset
+    def get(self, request):
+        try:
+            queryset = self.get_queryset()
+        except ValueError as e:
+            return Response(data={"error:":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
 
 class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
-    # def get(self, request, pk):
-    #     photos = Photo.objects.filter(id = pk)
-    #     # if len(photos) == 0:
-    #     #     return Response({"error": "no photo with id {0}".format(pk)})
-    #     photo = photos[0]
-    #     # with open("Main/media/photos/photo{0}.jpg".format(photo.id), 'wb') as imagefile:
-    #     #     imagefile.write(photo.photo)
-    #     uv = UV_Model()
-    #     f = io.imread("Main/media/photos/photo14.jpg".format(photo.id))
-    #     mask = uv.predict(f)
-    #     classifications = { 
-    #         "100" : "Отсутствует",
-    #         "200" : "Насыщенное",
-    #         "300" : "Карбонатное"
-    #     }
-    #     print("hey")
-    #     io.imshow(mask)
-    #     plt.show()
-    #     # root = str(BASE_DIR) + "\Main\media\photos\photo{0}.jpg".format(photo.id)
-    #     # response = HttpResponse("<img src='{0}'>".format(root))
-    #     # return response
-    #     return Response("Good")
 
         
 def testDayModel(request):
