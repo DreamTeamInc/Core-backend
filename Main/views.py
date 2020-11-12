@@ -115,10 +115,21 @@ def testDayModel(request):
 
 
 @api_view(['GET'])
-def useUFmodel(request, user_id, pk, model_id):
-    user = get_object_or_404(User, id=user_id)
-    model = get_object_or_404(Model, id=model_id)
-    photo = get_object_or_404(Photo, id = pk)
+def useUFmodel(request, photo_id, model_id):
+    user_id = 0
+    if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
+        user_id = request.COOKIES['token']
+    else:
+        return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+    user = User.objects.get(id=user_id)
+    model = Model.objects.filter(id=model_id)
+    if model.count() == 0:
+        return Response(data={"error":"no model with id {0}".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
+    model = model[0]
+    photo = Photo.objects.filter(id=photo_id)
+    if photo.count() == 0:
+        return Response(data={"error":"no photo with id {0}".format(photo_id)}, status=status.HTTP_400_BAD_REQUEST)
+    photo = photo[0]
     if model.kind != photo.kind:
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
     with open("Main/media/photos/photo{0}.jpg".format(photo.id), 'wb') as imagefile:
