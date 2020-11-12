@@ -53,5 +53,5 @@ class Mask(models.Model):
     classification = models.TextField()
     mask = models.BinaryField()
     likes = models.PositiveSmallIntegerField(default=0)
-    model = models.ManyToManyField(Model, db_table='Model_to_mask')
-    users_who_like = models.ManyToManyField(User, db_table='Likes', related_name='likes') # mb related_name='email'?
+    model = models.ManyToManyField(Model, db_table='Model_to_mask', blank=True)
+    users_who_like = models.ManyToManyField(User, db_table='Likes', related_name='likes', blank=True)
