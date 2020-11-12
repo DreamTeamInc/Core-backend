@@ -132,7 +132,7 @@ def useUFmodel(request, photo_id, model_id):
     photo = photo[0]
     if model.kind != photo.kind:
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
-    with open("Main/media/photos/photo{0}.jpg".format(photo.id), 'wb') as imagefile:
+    with open("photo{0}.jpg".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         uv = UV_Model()
         f = io.imread(imagefile.name)
