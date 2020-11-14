@@ -42,20 +42,20 @@ except ImportError:
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/drive-python-quickstart.json
 
-data = {
-    "installed":{
-        "client_id": os.environ["client_id"],
-        "project_id": os.environ[ "project_id"],
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://accounts.google.com/o/oauth2/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_secret": os.environ["client_secret"],
-        "redirect_uris":["urn:ietf:wg:oauth:2.0:oob","http://localhost"]
-    }
-}
+# data = {
+#     "installed":{
+#         "client_id": os.environ["client_id"],
+#         "project_id": os.environ[ "project_id"],
+#         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+#         "token_uri": "https://accounts.google.com/o/oauth2/token",
+#         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+#         "client_secret": os.environ["client_secret"],
+#         "redirect_uris":["urn:ietf:wg:oauth:2.0:oob","http://localhost"]
+#     }
+# }
 
-with open('client_secret.json', 'w') as outfile:
-    json.dump(data, outfile)
+# with open('client_secret.json', 'w') as outfile:
+#     json.dump(data, outfile)
 SCOPES = 'https://www.googleapis.com/auth/drive'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Core-backend'
