@@ -31,7 +31,6 @@ whitenoise==5.2.0
 
 cachetools==4.1.1
 google-api-core==1.23.0
-google-api-pythonclient==1.12.5 
 google-auth==1.23.0 
 google-auth-httplib2==0.0.4 
 googleapis-common-protos==1.52.0 
