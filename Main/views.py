@@ -15,7 +15,7 @@ from .models import User, Photo, Mask, Model
 from .serializers import *
 from .DataSienceUV.UV_Model import UV_Model
 from App.settings import BASE_DIR
-# from .DataSienceDaylight.model import DayModel
+from .DataSienceDaylight import googleDrive
 
 
 class CreateUser(generics.CreateAPIView):
@@ -103,19 +103,46 @@ class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
 
-        
-def testDayModel(request):
-    # print("Hey1")
-    # model = DayModel("Main\\DataSienceDaylight\\segmentator_sab.pt")
-    # print("Hey2")
-    # res = model.predict("Main\\DataSienceDaylight\\1006722.jpg")
-    # print("Hey3")
-    # io.imshow(res)
-    return Response("Good")
+
+
+@api_view(['POST'])
+def create_mask_daylight(request): 
+    mask = ''
+    if "mask" in request.FILES:
+        mask = request.FILES['mask']
+    else:
+        return Response(data={"error":"no mask parameter or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
+    byte_mask = mask.read() # if too big image use this: for chunk in photo.chunks():   ...
+    googleDrive.delete(mask.name.replace("mask", "photo"))
+    return Response(data={"message":"mask is successfully sent"}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
-def useUFmodel(request, photo_id, model_id):
+def use_daylight_model(request, photo_id, model_id):
+    user_id = 0
+    if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
+        user_id = request.COOKIES['token']
+    else:
+        return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+    user = User.objects.get(id=user_id)
+    model = Model.objects.filter(id=model_id)
+    if model.count() == 0:
+        return Response(data={"error":"no model with id {0}".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
+    model = model[0]
+    photo = Photo.objects.filter(id=photo_id)
+    if photo.count() == 0:
+        return Response(data={"error":"no photo with id {0}".format(photo_id)}, status=status.HTTP_400_BAD_REQUEST)
+    photo = photo[0]
+    if model.kind != photo.kind:
+        return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
+    with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
+        imagefile.write(photo.photo)
+        googleDrive.upload(imagefile.name)
+    return Response(data={"message":"photo is getting segmented right now. Please wait a little."}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def use_UF_model(request, photo_id, model_id):
     user_id = 0
     if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
         user_id = request.COOKIES['token']
@@ -170,6 +197,7 @@ def useUFmodel(request, photo_id, model_id):
     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     # return Response("Good")
+
 
 class AllWells(generics.ListAPIView):
     serializer_class = WellListSerializer
