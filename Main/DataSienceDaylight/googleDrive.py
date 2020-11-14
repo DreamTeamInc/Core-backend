@@ -42,9 +42,9 @@ except ImportError:
 # at ~/.credentials/drive-python-quickstart.json
 SCOPES = 'https://www.googleapis.com/auth/drive'
 # CLIENT_SECRET_FILE = config("CLIENT_SECRET")
-# APPLICATION_NAME = config('APPLICATION_NAME')
+# APPLICATION_NAME = 'Core-backend'
 CLIENT_SECRET_FILE = os.environ["APPLICATION_NAME"] 
-APPLICATION_NAME = os.environ['APPLICATION_NAME']
+APPLICATION_NAME = 'Core-backend'
 
 
 
