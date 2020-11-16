@@ -113,7 +113,7 @@ def create_mask_daylight(request):
     else:
         return Response(data={"error":"no mask parameter or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
     byte_mask = mask.read() # if too big image use this: for chunk in photo.chunks():   ...
-    googleDrive.delete(mask.name.replace("mask", "photo"))
+    # googleDrive.delete(mask.name.replace("mask", "photo"))
     return Response(data={"message":"mask is successfully sent"}, status=status.HTTP_200_OK)
 
 
