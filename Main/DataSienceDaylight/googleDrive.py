@@ -7,6 +7,7 @@ import os
 import json
 from oauth2client import file
 from mimetypes import MimeTypes
+from App.settings import BASE_DIR
 
 
 
@@ -66,13 +67,11 @@ APPLICATION_NAME = 'Core-backend'
 
 def get_credentials():
 
-    home_dir = os.path.expanduser('~')
-    credential_dir = os.path.join(home_dir, '.credentials')
+    credential_dir = os.path.join(BASE_DIR, '.credentials')
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
     credential_path = os.path.join(credential_dir,
                                    'drive-python-quickstart.json')
-
     store = oauth2client.file.Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
