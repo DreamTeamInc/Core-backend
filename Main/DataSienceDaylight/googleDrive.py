@@ -62,26 +62,25 @@ CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Core-backend'
 # CLIENT_SECRET_FILE = os.environ["APPLICATION_NAME"] 
 # APPLICATION_NAME = 'Core-backend'
-
+CREDENTIALS = config("CREDENTIALS")
 
 
 def get_credentials():
 
-    credential_dir = os.path.join(BASE_DIR, '.credentials')
-    if not os.path.exists(credential_dir):
-        os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir,
-                                   'drive-python-quickstart.json')
+    with open('drive-python-quickstart.json', 'w') as f:
+        f.write(CREDENTIALS)
+    credential_path = os.path.join(BASE_DIR, 'drive-python-quickstart.json')
     store = oauth2client.file.Storage(credential_path)
     credentials = store.get()
-    if not credentials or credentials.invalid:
-        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
-        flow.user_agent = APPLICATION_NAME
-        # if flags:
-        credentials = tools.run_flow(flow, store, flags)
-        # else:  # Needed only for compatibility with Python 2.6
-        #     credentials = tools.run(flow, store)
-        print('Storing credentials to ' + credential_path)
+    # if not credentials or credentials.invalid:
+    #     flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+    #     flow.user_agent = APPLICATION_NAME
+    #     # if flags:
+    #     credentials = tools.run_flow(flow, store, flags)
+    #     # else:  # Needed only for compatibility with Python 2.6
+    #     #     credentials = tools.run(flow, store)
+    #     print('Storing credentials to ' + credential_path)
+
     return credentials
 
 
