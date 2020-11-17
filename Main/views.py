@@ -340,7 +340,7 @@ def addMask(request, user_id, pk):
         return Response({"error":"user {0} has more than one active models".format(user_id)})
     model[0].mask_set.add(mask[0])
     serializer = ModelSerializer(model[0], many=False)
-    return Response(data=serializer.data)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['PUT'])
@@ -358,7 +358,23 @@ def removeMask(request, user_id, pk):
         return Response({"error":"user {0} has more than one active models".format(user_id)})
     model[0].mask_set.remove(mask[0])
     serializer = ModelSerializer(model[0], many=False)
-    return Response(data=serializer.data)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_active_model(request): 
+    user_id = 0
+    if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
+        user_id = request.COOKIES['token']
+    else:
+        return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+    model = Model.objects.filter(is_active=True, user=user_id)
+    if model.count() == 0:
+        return Response({"error":"user {0} has no active model".format(user_id)})
+    if model.count() > 1:
+        return Response({"error":"user {0} has more than one active models".format(user_id)})
+    serializer = ModelSerializer(model[0], many=False)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['PUT'])
