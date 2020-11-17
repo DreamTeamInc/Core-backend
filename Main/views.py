@@ -112,8 +112,18 @@ def create_mask_daylight(request):
         mask = request.FILES['mask']
     else:
         return Response(data={"error":"no mask parameter or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
+    classification = request.data['classification']
     byte_mask = mask.read() # if too big image use this: for chunk in photo.chunks():   ...
-    # googleDrive.delete(mask.name.replace("mask", "photo"))
+    try:
+        googleDrive.delete(mask.name.replace("mask", "photo"))
+    except:
+        pass
+    photo_id, user_id, model_id = mask.name[4:-4].split('_')
+    user = get_object_or_404(User, id=user_id)
+    photo = get_object_or_404(Photo, id=photo_id)
+    model = get_object_or_404(Model, id=model_id)
+    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=byte_mask)
+    mask.model.add(model)
     return Response(data={"message":"mask is successfully sent"}, status=status.HTTP_200_OK)
 
 
@@ -135,7 +145,7 @@ def use_daylight_model(request, photo_id, model_id):
     photo = photo[0]
     if model.kind != photo.kind:
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
-    with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
+    with open("photo{0}_{1}_{2}.png".format(photo.id, user_id, model_id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         googleDrive.upload(imagefile.name)
     return Response(data={"message":"photo is getting segmented right now. Please wait a little."}, status=status.HTTP_200_OK)
@@ -229,6 +239,24 @@ class WellInLocation(generics.ListAPIView):
 
 class CreateMask(generics.CreateAPIView):
     serializer_class = MaskSerializer
+    def post(self, request):
+        mask = ''
+        if 'mask' in request.FILES:
+            mask = request.FILES['mask']
+        else:
+             return Response(data={"error":"no mask field or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(data=request.data)
+        if not serializer.is_valid():
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        byte_mask = mask.read()
+        user = get_object_or_404(User, id=request.data["user"])
+        photo = get_object_or_404(Photo, id=request.data["photo"])
+        Mask.objects.create(mask=byte_mask,
+                            classification=request.data["classification"],
+                            user=user,
+                            photo=photo)
+        return Response({"response": "mask was successfully created"})
+        
 
 
 class GetAllMasks(generics.ListAPIView):
