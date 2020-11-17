@@ -147,7 +147,20 @@ def use_daylight_model(request, photo_id, model_id):
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
     with open("photo{0}_{1}_{2}.png".format(photo.id, user_id, model_id), 'wb') as imagefile:
         imagefile.write(photo.photo)
-        googleDrive.upload(imagefile.name)
+        # classification = {
+        #     "0": "Аргиллит",
+        #     "1": "Алевролит"
+        # }
+        # with open("classification{0}_{1}_{2}.json".format(photo.id, user_id, model_id), 'w') as f:
+        #     f.write(json.dumps(classification, ensure_ascii=False))
+        # import time
+        # print(time.clock())
+        # googleDrive.upload(f.name, "classifications")
+        # print(time.clock())
+        # googleDrive.upload("model0.pt", "models")
+        # print(time.clock())
+        googleDrive.upload(imagefile.name, "photo_predict")
+        # print(time.clock())
     return Response(data={"message":"photo is getting segmented right now. Please wait a little."}, status=status.HTTP_200_OK)
 
 
@@ -362,18 +375,9 @@ def removeMask(request, user_id, pk):
 
 
 @api_view(['GET'])
-def get_active_model(request): 
-    user_id = 0
-    if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
-        user_id = request.COOKIES['token']
-    else:
-        return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
-    model = Model.objects.filter(is_active=True, user=user_id)
-    if model.count() == 0:
-        return Response({"error":"user {0} has no active model".format(user_id)})
-    if model.count() > 1:
-        return Response({"error":"user {0} has more than one active models".format(user_id)})
-    serializer = ModelSerializer(model[0], many=False)
+def get_active_model(request, user_id): 
+    models = Model.objects.filter(is_active=True, user=user_id)
+    serializer = ModelSerializer(models, many=True)
     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
