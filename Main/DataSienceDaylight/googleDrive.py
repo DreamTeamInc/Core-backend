@@ -72,13 +72,13 @@ def get_credentials():
     return credentials
 
 
-def upload(path, parent_id=None):
+def upload(path, parent_name=None):
     mime = MimeTypes()
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('drive', 'v3', http=http)
 
-    parent_id = get_id(service, "photo_predict")
+    parent_id = get_id(service, parent_name)
 
     file_metadata = {
         'name': os.path.basename(path),
