@@ -86,9 +86,9 @@ class GetAllPhotos(generics.ListAPIView):
             elif tagged == "Неразмеченные":
                 queryset = queryset.filter(mask__isnull=True)
             elif tagged == "Размеченные мной":
-                queryset = queryset.filter(user=user_id).filter(mask__isnull=False).distinct()
+                queryset = queryset.filter(mask__user=user_id).distinct()
             elif tagged == "Неразмеченные мной":
-                queryset = queryset.filter(user=user_id).filter(mask__isnull=True)
+                queryset = queryset.filter(~Q(mask__user=user_id))
         return queryset
     # def get(self, request):
     #     try:
@@ -154,13 +154,15 @@ def use_daylight_model(request, photo_id, model_id):
         # with open("classification{0}_{1}_{2}.json".format(photo.id, user_id, model_id), 'w') as f:
         #     f.write(json.dumps(classification, ensure_ascii=False))
         # import time
-        # print(time.clock())
+        # t = time.time()
         # googleDrive.upload(f.name, "classifications")
-        # print(time.clock())
-        # googleDrive.upload("model0.pt", "models")
-        # print(time.clock())
+        # print("classifications загрузилось за ", round(time.time() - t), " секунд")
+        # t = time.time()
+        # googleDrive.upload('model0.pt', "models")
+        # print("модель загрузилась за ", round(time.time() - t), " секунд")
+        # t = time.time()
         googleDrive.upload(imagefile.name, "photo_predict")
-        # print(time.clock())
+        # print("фото загрущзилось за ", round(time.time() - t), " секунд")
     return Response(data={"message":"photo is getting segmented right now. Please wait a little."}, status=status.HTTP_200_OK)
 
 
@@ -346,11 +348,12 @@ def addMask(request, user_id, pk):
     mask = Mask.objects.filter(id=pk)
     if mask.count() == 0:
         return Response({"error":"no mask with id {0}".format(pk)})
-    model = Model.objects.filter(is_active=True, user=user_id)
+    kind = mask[0].photo.kind
+    model = Model.objects.filter(is_active=True, user=user_id, kind=kind)
     if model.count() == 0:
-        return Response({"error":"user {0} has no active model".format(user_id)})
+        return Response({"error":"user {0} has no active models with kind {1}".format(user_id, kind)})
     if model.count() > 1:
-        return Response({"error":"user {0} has more than one active models".format(user_id)})
+        return Response({"error":"user {0} has more than one active models with kind {1}".format(user_id, kind)})
     model[0].mask_set.add(mask[0])
     serializer = ModelSerializer(model[0], many=False)
     return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -364,11 +367,12 @@ def removeMask(request, user_id, pk):
     mask = Mask.objects.filter(id=pk)
     if mask.count() == 0:
         return Response({"error":"no mask with id {0}".format(pk)})
-    model = Model.objects.filter(is_active=True, user=user_id)
+    kind = mask[0].photo.kind
+    model = Model.objects.filter(is_active=True, user=user_id, kind=kind)
     if model.count() == 0:
-        return Response({"error":"user {0} has no active model".format(user_id)})
+        return Response({"error":"user {0} has no active models with kind {1}".format(user_id, kind)})
     if model.count() > 1:
-        return Response({"error":"user {0} has more than one active models".format(user_id)})
+        return Response({"error":"user {0} has more than one active models with kind {1}".format(user_id, kind)})
     model[0].mask_set.remove(mask[0])
     serializer = ModelSerializer(model[0], many=False)
     return Response(data=serializer.data, status=status.HTTP_200_OK)
