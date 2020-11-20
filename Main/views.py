@@ -112,8 +112,13 @@ def create_mask_daylight(request):
         mask = request.FILES['mask']
     else:
         return Response(data={"error":"no mask parameter or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
-    classification = request.data['classification']
     byte_mask = mask.read() # if too big image use this: for chunk in photo.chunks():   ...
+    classification = {
+        0 : "Аргиллит",
+        1 : "Алевролит глинистый",
+        2 : "Песчаник",
+        3 : "Другое" 
+    }
     try:
         googleDrive.delete(mask.name.replace("mask", "photo"))
     except:
@@ -147,22 +152,7 @@ def use_daylight_model(request, photo_id, model_id):
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
     with open("photo{0}_{1}_{2}.png".format(photo.id, user_id, model_id), 'wb') as imagefile:
         imagefile.write(photo.photo)
-        # classification = {
-        #     "0": "Аргиллит",
-        #     "1": "Алевролит"
-        # }
-        # with open("classification{0}_{1}_{2}.json".format(photo.id, user_id, model_id), 'w') as f:
-        #     f.write(json.dumps(classification, ensure_ascii=False))
-        # import time
-        # t = time.time()
-        # googleDrive.upload(f.name, "classifications")
-        # print("classifications загрузилось за ", round(time.time() - t), " секунд")
-        # t = time.time()
-        # googleDrive.upload('model0.pt', "models")
-        # print("модель загрузилась за ", round(time.time() - t), " секунд")
-        # t = time.time()
         googleDrive.upload(imagefile.name, "photo_predict")
-        # print("фото загрущзилось за ", round(time.time() - t), " секунд")
     return Response(data={"message":"photo is getting segmented right now. Please wait a little."}, status=status.HTTP_200_OK)
 
 
