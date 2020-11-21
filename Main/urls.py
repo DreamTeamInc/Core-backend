@@ -29,9 +29,10 @@ urlpatterns = [
     path('photo/wells/<well>/', AllPhotoByWell.as_view()),
     path('user/<int:user_id>/mask/<int:pk>/add/', addMask),
     path('user/<int:user_id>/mask/<int:pk>/remove/', removeMask),
-    path('photo/<int:photo_id>/use_day_model/<int:model_id>', use_daylight_model),
-    path('photo/<int:photo_id>/use_uf_model/<int:model_id>', use_UF_model),
+    path('photo/<int:photo_id>/use_day_model/<int:model_id>/', use_daylight_model),
+    path('photo/<int:photo_id>/use_uf_model/<int:model_id>/', use_UF_model),
     path('send_mask/', create_mask_daylight),
+    path('user/<int:user_id>/get_active_model/', get_active_model),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

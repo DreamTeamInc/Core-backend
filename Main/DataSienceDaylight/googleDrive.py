@@ -7,6 +7,7 @@ import os
 import json
 from oauth2client import file
 from mimetypes import MimeTypes
+from App.settings import BASE_DIR
 
 
 
@@ -42,37 +43,21 @@ except ImportError:
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/drive-python-quickstart.json
 
-# data = {
-#     "installed":{
-#         "client_id": os.environ["client_id"],
-#         "project_id": os.environ[ "project_id"],
-#         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-#         "token_uri": "https://accounts.google.com/o/oauth2/token",
-#         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-#         "client_secret": os.environ["client_secret"],
-#         "redirect_uris":["urn:ietf:wg:oauth:2.0:oob","http://localhost"]
-#     }
-# }
 
-# with open('client_secret.json', 'w') as outfile:
-#     json.dump(data, outfile)
+with open('client_secret.json', 'w') as f:
+    f.write(config("CLIENT_SECRET"))
+
 SCOPES = 'https://www.googleapis.com/auth/drive'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Core-backend'
-# CLIENT_SECRET_FILE = os.environ["APPLICATION_NAME"] 
-# APPLICATION_NAME = 'Core-backend'
-
+CREDENTIALS = config("CREDENTIALS")
 
 
 def get_credentials():
 
-    home_dir = os.path.expanduser('~')
-    credential_dir = os.path.join(home_dir, '.credentials')
-    if not os.path.exists(credential_dir):
-        os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir,
-                                   'drive-python-quickstart.json')
-
+    with open('drive-python-quickstart.json', 'w') as f:
+        f.write(CREDENTIALS)
+    credential_path = os.path.join(BASE_DIR, 'drive-python-quickstart.json')
     store = oauth2client.file.Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
@@ -83,16 +68,17 @@ def get_credentials():
         # else:  # Needed only for compatibility with Python 2.6
         #     credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
+
     return credentials
 
 
-def upload(path, parent_id=None):
+def upload(path, parent_name=None):
     mime = MimeTypes()
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('drive', 'v3', http=http)
 
-    parent_id = get_id(service, "photo_predict")
+    parent_id = get_id(service, parent_name)
 
     file_metadata = {
         'name': os.path.basename(path),
