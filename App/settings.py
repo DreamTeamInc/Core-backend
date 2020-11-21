@@ -138,6 +138,9 @@ DATABASES = {
 # }
 
 
+MAX_UPLOAD_SIZE = "10242880"
+
+
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
