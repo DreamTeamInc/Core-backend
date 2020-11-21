@@ -122,7 +122,7 @@ DATABASES = {
         'HOST': os.environ['HOST'],
         'PORT': os.environ['PORT'],
     }
-}
+} 
 
 
 # DATABASES = {
