@@ -117,7 +117,7 @@ def create_mask_daylight(request):
         0 : "Аргиллит",
         1 : "Алевролит глинистый",
         2 : "Песчаник",
-        3 : "Другое" 
+        3 : "Другое"
     }
     try:
         googleDrive.delete(mask.name.replace("mask", "photo"))
@@ -129,7 +129,7 @@ def create_mask_daylight(request):
     model = get_object_or_404(Model, id=model_id)
     mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=byte_mask)
     mask.model.add(model)
-    return Response(data={"message":"mask is successfully sent"}, status=status.HTTP_200_OK)
+    return Response(data={"message":"mask {0} is successfully sent".format(mask.id)}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -177,41 +177,44 @@ def use_UF_model(request, photo_id, model_id):
     with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         uv = UV_Model()
-        f = io.imread(imagefile.name)
-    mask = uv.predict(f)
-    # print(mask.shape)
-    # a = np.unique(mask)
-    # print(a)
-    classification = { 
-        "100" : "Отсутствует",
-        "200" : "Насыщенное",
-        "300" : "Карбонатное"
-    }
-    #mask = np.load("Main/uf.npz")['data']
-    mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
-    mask_rgb[:,:,0] = mask
-    mask_rgb[:,:,1] = mask
-    mask_rgb[:,:,2] = mask
-    im = Image.fromarray(mask_rgb, 'RGB')
-    # im.show
-    # im.save("image.png", "png")
-    # im = Image.open('image.png')
-    # a = np.asarray(im)
-    b = IO.BytesIO()
-    im.save(b, 'png')
-    im_bytes = b.getvalue()
-    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
-    mask.model.add(model)
-    # with open("mask{0}.png".format(photo.id), "wb") as f:
-    #     f.write(mask.mask)
-    # f = io.imread(f.name)
-    # print(f.shape)
-    # classes = np.unique(f)
-    # print(classes)
-    serializer = MaskSerializer(mask)
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
+    #     f = io.imread(imagefile.name)
+    # mask = uv.predict(f)
+    new_model = uv.save_model(model.name)
+    with open(new_model[0], 'rb') as f:
+        byte_model = f.read()
+    model.model = byte_model
+    print(model)
+    model.save()
+    # classification = { 
+    #     "100" : "Отсутствует",
+    #     "200" : "Насыщенное",
+    #     "300" : "Карбонатное"
+    # }
+    # #mask = np.load("Main/uf.npz")['data']
+    # mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
+    # mask_rgb[:,:,0] = mask
+    # mask_rgb[:,:,1] = mask
+    # mask_rgb[:,:,2] = mask
+    # im = Image.fromarray(mask_rgb, 'RGB')
+    # # im.show
+    # # im.save("image.png", "png")
+    # # im = Image.open('image.png')
+    # # a = np.asarray(im)
+    # b = IO.BytesIO()
+    # im.save(b, 'png')
+    # im_bytes = b.getvalue()
+    # mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
+    # mask.model.add(model)
+    # # with open("mask{0}.png".format(photo.id), "wb") as f:
+    # #     f.write(mask.mask)
+    # # f = io.imread(f.name)
+    # # print(f.shape)
+    # # classes = np.unique(f)
+    # # print(classes)
+    # serializer = MaskSerializer(mask)
+    # return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    # return Response("Good")
+    return Response("Good")
 
 
 class AllWells(generics.ListAPIView):
@@ -261,7 +264,6 @@ class CreateMask(generics.CreateAPIView):
                             user=user,
                             photo=photo)
         return Response({"response": "mask was successfully created"})
-        
 
 
 class GetAllMasks(generics.ListAPIView):
