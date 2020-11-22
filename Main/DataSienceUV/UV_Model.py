@@ -107,7 +107,7 @@ class UV_Model(object):
             for i in range(features.shape[0]):
                 self.features.loc[self.features.shape[0]] = features.loc[i].tolist()
                 self.y.loc[self.y.shape[0]] = y.loc[i]
-    self.etc.fit(self.features,self.y)
+        self.etc.fit(self.features,self.y)
   
     def save_model(self, name):
         return dump(self.etc, name)
