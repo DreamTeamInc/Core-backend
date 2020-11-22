@@ -95,7 +95,7 @@ class UV_Model(object):
         semantic_seg = self.__to_semantic_segmentation(mask,predicts)
         return semantic_seg
     
-   def retrain(self,photos,masks,jsons):
+    def retrain(self,photos,masks,jsons):
         for i in range(len(photos)):
             photo = photos[i]
             mask = masks[i]
