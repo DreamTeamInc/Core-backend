@@ -33,6 +33,8 @@ urlpatterns = [
     path('photo/<int:photo_id>/use_uf_model/<int:model_id>/', use_UF_model),
     path('send_mask/', create_mask_daylight),
     path('user/<int:user_id>/get_active_model/', get_active_model),
+    path('user/<int:user_id>/active_model/masks', all_masks_from_active_model),
+    path('retrain_uf_model/<int:model_id>', retrain_UF_model),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
