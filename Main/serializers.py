@@ -44,3 +44,15 @@ class ModelSerializer(serializers.ModelSerializer):
         model = Model
         exclude = ["model"]
 
+
+class PhotoShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = ["location", "well", "depth"]
+
+
+class MaskDetailSerializer(serializers.ModelSerializer):
+    photo = PhotoShortSerializer(many=False)
+    class Meta:
+        model = Mask
+        fields = ["id", "user", "photo", "classification", "mask", "likes", "model", "users_who_like", "photo"]

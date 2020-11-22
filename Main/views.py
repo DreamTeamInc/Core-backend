@@ -434,7 +434,7 @@ def get_active_model(request, user_id):
 @api_view(['GET'])
 def all_masks_from_active_model(request, user_id): 
     masks = Mask.objects.filter(model__user=user_id, model__is_active=True, model__kind=2)
-    serializer = MaskSerializer(masks, many=True)
+    serializer = MaskDetailSerializer(masks, many=True)
     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
