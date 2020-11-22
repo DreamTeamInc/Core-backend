@@ -113,10 +113,10 @@ def create_mask_daylight(request):
         return Response(data={"error":"no mask parameter or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
     byte_mask = mask.read() # if too big image use this: for chunk in photo.chunks():   ...
     classification = {
-        0 : "Аргиллит",
-        1 : "Алевролит глинистый",
-        2 : "Песчаник",
-        3 : "Другое"
+        "0" : "Аргиллит",
+        "1" : "Алевролит глинистый",
+        "2" : "Песчаник",
+        "3" : "Другое"
     }
     try:
         googleDrive.delete(mask.name.replace("mask", "photo"))
@@ -175,44 +175,99 @@ def use_UF_model(request, photo_id, model_id):
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
     with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
-        uv = UV_Model()
-    #     f = io.imread(imagefile.name)
-    # mask = uv.predict(f)
-    new_model = uv.save_model(model.name)
-    with open(new_model[0], 'rb') as f:
-        byte_model = f.read()
-    model.model = byte_model
-    print(model)
-    model.save()
-    # classification = { 
-    #     "100" : "Отсутствует",
-    #     "200" : "Насыщенное",
-    #     "300" : "Карбонатное"
-    # }
-    # #mask = np.load("Main/uf.npz")['data']
-    # mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
-    # mask_rgb[:,:,0] = mask
-    # mask_rgb[:,:,1] = mask
-    # mask_rgb[:,:,2] = mask
-    # im = Image.fromarray(mask_rgb, 'RGB')
-    # # im.show
-    # # im.save("image.png", "png")
-    # # im = Image.open('image.png')
-    # # a = np.asarray(im)
-    # b = IO.BytesIO()
-    # im.save(b, 'png')
-    # im_bytes = b.getvalue()
-    # mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
-    # mask.model.add(model)
-    # # with open("mask{0}.png".format(photo.id), "wb") as f:
-    # #     f.write(mask.mask)
-    # # f = io.imread(f.name)
-    # # print(f.shape)
-    # # classes = np.unique(f)
-    # # print(classes)
-    # serializer = MaskSerializer(mask)
-    # return Response(data=serializer.data, status=status.HTTP_200_OK)
+        uv = 0
+        if model.model:
+            print("trained model")
+            with open(model.model, 'rb') as modelfile:
+                uv = UV_Model(model=modelfile)
+        else:
+            print("empty model")
+            uv = UV_Model()
+        
+        f = io.imread(imagefile.name)
+    mask = uv.predict(f)
+    classification = { 
+        "100" : "Отсутствует",
+        "200" : "Насыщенное",
+        "300" : "Карбонатное"
+    }
+        # mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
+        # mask_rgb[:,:,0] = mask
+        # mask_rgb[:,:,1] = mask
+        # mask_rgb[:,:,2] = mask
+        # im = Image.fromarray(mask_rgb, 'RGB')
+    im = Image.fromarray(mask)
+    # im.show()
+    im.save("mask{0}.png".format(photo.id))
+        # a = np.asarray(im)
+        # b = IO.BytesIO()
+        # im.save(b, 'png')
+        # im_bytes = b.getvalue()
+    im_bytes = bytes()
+    with open("mask{0}.png".format(photo.id), 'rb') as f:
+        im_bytes = f.read()
+    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
+    mask.model.add(model)   
+    serializer = MaskSerializer(mask)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+    # return Response("Good")
+
+
+@api_view(['PUT'])
+def retrain_UF_model(request, model_id):
+    # user_id = 0
+    # if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
+    #     user_id = request.COOKIES['token']
+    # else:
+    #     return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+    # user = User.objects.get(id=user_id)
+    model = Model.objects.filter(id=model_id)
+    if model.count() == 0:
+        return Response(data={"error":"no model with id {0}".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
+    model = model[0]
+    if model.kind != 2:
+        return Response(data={"error":"model {0} is not ultraviolet".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
+
+    uv = 0
+    if model.model:
+        print("trained model")
+        with open(model.model, 'rb') as modelfile:
+            uv = UV_Model(model=modelfile)
+    else:
+        print("empty model")
+        uv = UV_Model()
+
+    mask_ids = request.POST.getlist('masks')
+    masks = []
+    photos = []
+    jsons = []
+    for mask_id in mask_ids:
+
+        mask = get_object_or_404(Mask, id=mask_id)
+        with open("mask{0}.png".format(mask_id), 'wb') as maskfile:
+            maskfile.write(mask.mask)
+        # was an error: could not find a format to read the specified file in single-image mode
+        with open("mask{0}.png".format(mask_id), 'rb') as maskreadfile:
+            masks.append(io.imread(maskreadfile.name, as_gray=True))
+        
+        photo = get_object_or_404(Photo, id=mask.photo.id)
+        with open("photo{0}.png".format(photo.id), 'wb') as photofile:
+            photofile.write(photo.photo)
+            photos.append(io.imread(photofile.name))
+
+        classification = mask.classification.replace("'", '"')
+        jsons.append(json.loads(classification))
+
+    print("hey2")
+    uv.retrain(photos, masks, jsons)
+    print("hey3")
+    new_model = uv.save_model(model.name)
+    print("len", len(new_model[0]))
+    # with open(new_model[0], 'rb') as f:
+    #     byte_model = f.read()
+    # model.model = byte_model
+    # model.save()
     return Response("Good")
 
 
@@ -373,6 +428,13 @@ def removeMask(request, user_id, pk):
 def get_active_model(request, user_id): 
     models = Model.objects.filter(is_active=True, user=user_id)
     serializer = ModelSerializer(models, many=True)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def all_masks_from_active_model(request, user_id): 
+    masks = Mask.objects.filter(model__user=user_id, model__is_active=True, model__kind=2)
+    serializer = MaskSerializer(masks, many=True)
     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
