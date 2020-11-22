@@ -95,19 +95,19 @@ class UV_Model(object):
         semantic_seg = self.__to_semantic_segmentation(mask,predicts)
         return semantic_seg
     
-    def retrain(self,photos,masks,jsons):
-        for i in photos.shape[0]:
+   def retrain(self,photos,masks,jsons):
+        for i in range(len(photos)):
             photo = photos[i]
             mask = masks[i]
             json_data = jsons[i]
-            features = self.__photo_preprocessing(photo, mask, json_data)
+            features = self.__photo_preprocessing(photo,mask,json_data)
             y = features['y']
-            features.drop(['y'], axis='columns', inplace=True)
+            features.drop(['y'],axis='columns', inplace=True)
             #self.etc.fit(features,y)
             for i in range(features.shape[0]):
                 self.features.loc[self.features.shape[0]] = features.loc[i].tolist()
                 self.y.loc[self.y.shape[0]] = y.loc[i]
-        self.etc.fit(self.features, self.y)
+    self.etc.fit(self.features,self.y)
   
     def save_model(self, name):
         return dump(self.etc, name)
