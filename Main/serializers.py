@@ -42,4 +42,5 @@ class ModelSerializer(serializers.ModelSerializer):
     mask_set = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     class Meta:
         model = Model
-        fields = '__all__'
+        exclude = ["model"]
+
