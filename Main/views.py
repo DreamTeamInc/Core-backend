@@ -342,7 +342,8 @@ class CreateMask(generics.CreateAPIView):
                             classification=request.data["classification"],
                             user=user,
                             photo=photo)
-        model.mask_set.add(mask)
+        if photo.kind == 2:
+            model.mask_set.add(mask)
         return Response(data={"response": "mask was successfully created"}, status=status.HTTP_201_CREATED)
 
 
