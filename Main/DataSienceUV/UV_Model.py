@@ -110,4 +110,4 @@ class UV_Model(object):
         self.etc.fit(self.features,self.y)
   
     def save_model(self, name):
-        return dump(self.etc, name)
+        dump(self.etc, name)

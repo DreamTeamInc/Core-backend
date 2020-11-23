@@ -176,16 +176,15 @@ def use_UF_model(request, photo_id, model_id):
     with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         uv = 0
-        # if model.model:
-        #     print("trained model")
-        #     breakpoint()
-        #     with open(model.name, 'wb') as modelfile:
-        #         modelfile.write(model.model)
-        #     print(model.name)
-        #     uv = UV_Model(model.name)
-        # else:
-        #     print("empty model")
-        uv = UV_Model()
+        if model.model:
+            print("trained model")
+            print(model.name)
+            with open(model.name, 'wb') as modelfile:
+                modelfile.write(model.model)
+            uv = UV_Model(model.name)
+        else:
+            print("empty model")
+            uv = UV_Model()
         
         f = io.imread(imagefile.name)
     mask = uv.predict(f)
@@ -239,13 +238,13 @@ def retrain_UF_model(request, model_id):
         return Response(data={"error":"model {0} is not ultraviolet".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
 
     uv = 0
-    # if model.model:
-    #     print("TRAINED model")
-    #     with open(model.name, 'wb') as modelfile:
-    #         modelfile.write(model.model)
-    #     uv = UV_Model(model=modelfile.name)
-    # else:
-    #     print("empty model")
+    if model.model:
+        print("TRAINED model")
+        with open(model.name, 'wb') as modelfile:
+            modelfile.write(model.model)
+        uv = UV_Model(model=modelfile.name)
+    else:
+        print("empty model")
     uv = UV_Model()
 
     mask_ids = request.POST.getlist('masks')
@@ -291,10 +290,9 @@ def retrain_UF_model(request, model_id):
     # ]
     uv.retrain(photos, masks, jsons)
     print("hey3")
-    new_model = uv.save_model(model.name)
-    print(new_model)
-    with open(new_model[0], 'rb') as f:
-        model.model = f.readline()
+    uv.save_model(model.name)
+    with open(model.name, 'rb') as f:
+        model.model = f.read()
     print(len(model.model))
     model.save()
     return Response(data={"message":"model has successfully retrained"}, status=status.HTTP_200_OK)
