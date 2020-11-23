@@ -176,28 +176,28 @@ def use_UF_model(request, photo_id, model_id):
     with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         uv = 0
-        if model.model:
-            print("trained model")
-            breakpoint()
-            with open(model.name, 'wb') as modelfile:
-                modelfile.write(model.model)
-            print(model.name)
-            uv = UV_Model(model.name)
-        else:
-            print("empty model")
-            uv = UV_Model()
+        # if model.model:
+        #     print("trained model")
+        #     breakpoint()
+        #     with open(model.name, 'wb') as modelfile:
+        #         modelfile.write(model.model)
+        #     print(model.name)
+        #     uv = UV_Model(model.name)
+        # else:
+        #     print("empty model")
+        uv = UV_Model()
         
         f = io.imread(imagefile.name)
     mask = uv.predict(f)
-    encoder = {100 : 0, 200 : 1, 300 : 2}
+    encoder = {100 : 0, 200 : 50, 300 : 100}
     for i in range(len(mask)):
         for j in range(len(mask[0])):
             mask[i][j] = encoder[mask[i][j]]
     classes = np.unique(mask)
     standart = {
         "0" : "Отсутствует",
-        "1" : "Насыщенное",
-        "2" : "Карбонатное"
+        "50" : "Насыщенное",
+        "100" : "Карбонатное"
     }
     classification = {str(clas): standart[str(clas)] for clas in classes}
     mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
@@ -206,7 +206,7 @@ def use_UF_model(request, photo_id, model_id):
     mask_rgb[:,:,2] = mask
     im = Image.fromarray(mask_rgb, 'RGB')
     # im = Image.fromarray(mask)
-    # im.save("mask{0}.png".format(photo.id))
+    im.save("mask{0}.png".format(photo.id))
     # a = np.asarray(im)
     # print(np.unique(a))
         # b = IO.BytesIO()
