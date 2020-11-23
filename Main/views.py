@@ -176,13 +176,16 @@ def use_UF_model(request, photo_id, model_id):
     with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         uv = 0
-        if model.model:
-            print("trained model")
-            with open(model.model, 'rb') as modelfile:
-                uv = UV_Model(model=modelfile)
-        else:
-            print("empty model")
-            uv = UV_Model()
+        # if model.model:
+        #     print("trained model")
+        #     breakpoint() 
+        #     with open(model.name, 'wb') as modelfile:
+        #         modelfile.write(model.model)
+        #     print(model.name)
+        #     uv = UV_Model(model="Ультрафиолет")
+        # else:
+        #     print("empty model")
+        uv = UV_Model()
         
         f = io.imread(imagefile.name)
     mask = uv.predict(f)
@@ -190,18 +193,19 @@ def use_UF_model(request, photo_id, model_id):
     for i in range(len(mask)):
         for j in range(len(mask[0])):
             mask[i][j] = encoder[mask[i][j]]
-    classification = { 
+    classes = np.unique(mask)
+    standart = {
         "0" : "Отсутствует",
         "1" : "Насыщенное",
         "2" : "Карбонатное"
     }
+    classification = {str(clas): standart[str(clas)] for clas in classes}
         # mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
         # mask_rgb[:,:,0] = mask
         # mask_rgb[:,:,1] = mask
         # mask_rgb[:,:,2] = mask
         # im = Image.fromarray(mask_rgb, 'RGB')
     im = Image.fromarray(mask)
-    # im.show()
     im.save("mask{0}.png".format(photo.id))
         # a = np.asarray(im)
         # b = IO.BytesIO()
@@ -213,8 +217,8 @@ def use_UF_model(request, photo_id, model_id):
     mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
     mask.model.add(model)   
     serializer = MaskSerializer(mask)
+    Mask.objects.filter(id=mask.id).delete()
     return Response(data=serializer.data, status=status.HTTP_200_OK)
-
     # return Response("Good")
 
 
@@ -234,62 +238,65 @@ def retrain_UF_model(request, model_id):
         return Response(data={"error":"model {0} is not ultraviolet".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
 
     uv = 0
-    if model.model:
-        print("trained model")
-        with open(model.model, 'rb') as modelfile:
-            uv = UV_Model(model=modelfile)
-    else:
-        print("empty model")
-        uv = UV_Model()
+    # if model.model:
+    #     print("TRAINED model")
+    #     with open(model.name, 'wb') as modelfile:
+    #         modelfile.write(model.model)
+    #     uv = UV_Model(model=modelfile.name)
+    # else:
+    #     print("empty model")
+    uv = UV_Model()
 
     mask_ids = request.POST.getlist('masks')
+    # mask_id = request.data["masks"]
     masks = []
     photos = []
     jsons = []
-    # for mask_id in mask_ids:
+    for mask_id in mask_ids:
 
-    #     mask = get_object_or_404(Mask, id=mask_id)
-    #     with open("mask{0}.png".format(mask_id), 'wb') as maskfile:
-    #         maskfile.write(mask.mask)
-    #     # was an error: could not find a format to read the specified file in single-image mode
-    #     im = Image.open("mask{0}.png".format(mask_id))
-    #     a = np.asarray(im)
-    #     print(a.shape)
-    #     masks.append(a)
+        mask = get_object_or_404(Mask, id=mask_id)
+        with open("mask{0}.png".format(mask_id), 'wb') as maskfile:
+            maskfile.write(mask.mask)
+        # was an error: could not find a format to read the specified file in single-image mode
+        im = Image.open("mask{0}.png".format(mask_id))
+        a = np.asarray(im)
+        print(a.shape)
+        masks.append(a)
+        print(np.unique(a))
         
-    #     photo = get_object_or_404(Photo, id=mask.photo.id)
-    #     with open("photo{0}.png".format(photo.id), 'wb') as photofile:
-    #         photofile.write(photo.photo)
-    #         photos.append(io.imread(photofile.name))
-    #         print(photos[-1].shape)
+        photo = get_object_or_404(Photo, id=mask.photo.id)
+        with open("photo{0}.png".format(photo.id), 'wb') as photofile:
+            photofile.write(photo.photo)
+            photos.append(io.imread(photofile.name))
+            print(photos[-1].shape)
 
-    #     classification = mask.classification.replace("'", '"')
-    #     jsons.append(json.loads(classification))
+        print(mask.classification)
+        classification = mask.classification.replace("'", '"')
+        jsons.append(json.loads(classification))
     print("hey2")
-    photos = []
-    photos.append(io.imread("1012473.jpeg"))
-    print(photos[-1].shape)
-    masks = []
-    a = np.load("mask.npz")['data']
-    print(a)
-    masks.append(a)
-    print(masks[-1].shape)
-    jsons = [
-        {
-            "0" : "Отсутствует",
-            "1" : "Насыщенное"
-        }
-    ]
+    # photos = []
+    # photos.append(io.imread("1012473.jpeg"))
+    # print(photos[-1].shape)
+    # masks = []
+    # a = np.load("mask.npz")['data']
+    # print(a)
+    # masks.append(a)
+    # print(masks[-1].shape)
+    # jsons = [
+    #     {
+    #         "0" : "Отсутствует",
+    #         "1" : "Насыщенное"
+    #     }
+    # ]
     uv.retrain(photos, masks, jsons)
     print("hey3")
     new_model = uv.save_model(model.name)
     print(new_model)
     with open(new_model[0], 'rb') as f:
-        byte_model = f.read()
-    model.model = byte_model
-    print(len(byte_model))
-    # model.save()
-    return Response(len(model.model))
+        model.model = f.readline()
+    print(len(model.model))
+    model.save()
+    return Response(data={"message":"model has successfully retrained"}, status=status.HTTP_200_OK)
 
 
 class AllWells(generics.ListAPIView):
