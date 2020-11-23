@@ -176,16 +176,16 @@ def use_UF_model(request, photo_id, model_id):
     with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         uv = 0
-        # if model.model:
-        #     print("trained model")
-        #     breakpoint() 
-        #     with open(model.name, 'wb') as modelfile:
-        #         modelfile.write(model.model)
-        #     print(model.name)
-        #     uv = UV_Model(model="Ультрафиолет")
-        # else:
-        #     print("empty model")
-        uv = UV_Model()
+        if model.model:
+            print("trained model")
+            breakpoint()
+            with open(model.name, 'wb') as modelfile:
+                modelfile.write(model.model)
+            print(model.name)
+            uv = UV_Model(model.name)
+        else:
+            print("empty model")
+            uv = UV_Model()
         
         f = io.imread(imagefile.name)
     mask = uv.predict(f)
@@ -200,14 +200,15 @@ def use_UF_model(request, photo_id, model_id):
         "2" : "Карбонатное"
     }
     classification = {str(clas): standart[str(clas)] for clas in classes}
-        # mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
-        # mask_rgb[:,:,0] = mask
-        # mask_rgb[:,:,1] = mask
-        # mask_rgb[:,:,2] = mask
-        # im = Image.fromarray(mask_rgb, 'RGB')
-    im = Image.fromarray(mask)
-    im.save("mask{0}.png".format(photo.id))
-        # a = np.asarray(im)
+    mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
+    mask_rgb[:,:,0] = mask
+    mask_rgb[:,:,1] = mask
+    mask_rgb[:,:,2] = mask
+    im = Image.fromarray(mask_rgb, 'RGB')
+    # im = Image.fromarray(mask)
+    # im.save("mask{0}.png".format(photo.id))
+    # a = np.asarray(im)
+    # print(np.unique(a))
         # b = IO.BytesIO()
         # im.save(b, 'png')
         # im_bytes = b.getvalue()
@@ -215,7 +216,7 @@ def use_UF_model(request, photo_id, model_id):
     with open("mask{0}.png".format(photo.id), 'rb') as f:
         im_bytes = f.read()
     mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
-    mask.model.add(model)   
+    mask.model.add(model)
     serializer = MaskSerializer(mask)
     Mask.objects.filter(id=mask.id).delete()
     return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -470,6 +471,12 @@ def all_masks_from_active_model(request, user_id):
     masks = Mask.objects.filter(model__user=user_id, model__is_active=True, model__kind=2)
     serializer = MaskDetailSerializer(masks, many=True)
     return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+def del_all_masks_from_active_model(request, user_id): 
+    masks = Mask.objects.filter(model__user=user_id, model__is_active=True, model__kind=2).delete()
+    return Response(data={"message":"masks successfully deleted"}, status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['PUT'])
