@@ -186,10 +186,14 @@ def use_UF_model(request, photo_id, model_id):
         
         f = io.imread(imagefile.name)
     mask = uv.predict(f)
+    encoder = {100 : 0, 200 : 1, 300 : 2}
+    for i in range(len(mask)):
+        for j in range(len(mask[0])):
+            mask[i][j] = encoder[mask[i][j]]
     classification = { 
-        "100" : "Отсутствует",
-        "200" : "Насыщенное",
-        "300" : "Карбонатное"
+        "0" : "Отсутствует",
+        "1" : "Насыщенное",
+        "2" : "Карбонатное"
     }
         # mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
         # mask_rgb[:,:,0] = mask
@@ -242,33 +246,50 @@ def retrain_UF_model(request, model_id):
     masks = []
     photos = []
     jsons = []
-    for mask_id in mask_ids:
+    # for mask_id in mask_ids:
 
-        mask = get_object_or_404(Mask, id=mask_id)
-        with open("mask{0}.png".format(mask_id), 'wb') as maskfile:
-            maskfile.write(mask.mask)
-        # was an error: could not find a format to read the specified file in single-image mode
-        with open("mask{0}.png".format(mask_id), 'rb') as maskreadfile:
-            masks.append(io.imread(maskreadfile.name, as_gray=True))
+    #     mask = get_object_or_404(Mask, id=mask_id)
+    #     with open("mask{0}.png".format(mask_id), 'wb') as maskfile:
+    #         maskfile.write(mask.mask)
+    #     # was an error: could not find a format to read the specified file in single-image mode
+    #     im = Image.open("mask{0}.png".format(mask_id))
+    #     a = np.asarray(im)
+    #     print(a.shape)
+    #     masks.append(a)
         
-        photo = get_object_or_404(Photo, id=mask.photo.id)
-        with open("photo{0}.png".format(photo.id), 'wb') as photofile:
-            photofile.write(photo.photo)
-            photos.append(io.imread(photofile.name))
+    #     photo = get_object_or_404(Photo, id=mask.photo.id)
+    #     with open("photo{0}.png".format(photo.id), 'wb') as photofile:
+    #         photofile.write(photo.photo)
+    #         photos.append(io.imread(photofile.name))
+    #         print(photos[-1].shape)
 
-        classification = mask.classification.replace("'", '"')
-        jsons.append(json.loads(classification))
-
+    #     classification = mask.classification.replace("'", '"')
+    #     jsons.append(json.loads(classification))
     print("hey2")
+    photos = []
+    photos.append(io.imread("1012473.jpeg"))
+    print(photos[-1].shape)
+    masks = []
+    a = np.load("mask.npz")['data']
+    print(a)
+    masks.append(a)
+    print(masks[-1].shape)
+    jsons = [
+        {
+            "0" : "Отсутствует",
+            "1" : "Насыщенное"
+        }
+    ]
     uv.retrain(photos, masks, jsons)
     print("hey3")
     new_model = uv.save_model(model.name)
-    print("len", len(new_model[0]))
-    # with open(new_model[0], 'rb') as f:
-    #     byte_model = f.read()
-    # model.model = byte_model
+    print(new_model)
+    with open(new_model[0], 'rb') as f:
+        byte_model = f.read()
+    model.model = byte_model
+    print(len(byte_model))
     # model.save()
-    return Response("Good")
+    return Response(len(model.model))
 
 
 class AllWells(generics.ListAPIView):
@@ -302,6 +323,10 @@ class WellInLocation(generics.ListAPIView):
 class CreateMask(generics.CreateAPIView):
     serializer_class = MaskSerializer
     def post(self, request):
+        try:
+            model = get_object_or_404(Model, is_active=True, kind=2)
+        except:
+            return Response(data={"error": "there is no active ultraviolet model or it isn't the only one"}, status=status.HTTP_400_BAD_REQUEST)
         mask = ''
         if 'mask' in request.FILES:
             mask = request.FILES['mask']
@@ -313,11 +338,12 @@ class CreateMask(generics.CreateAPIView):
         byte_mask = mask.read()
         user = get_object_or_404(User, id=request.data["user"])
         photo = get_object_or_404(Photo, id=request.data["photo"])
-        Mask.objects.create(mask=byte_mask,
+        mask = Mask.objects.create(mask=byte_mask,
                             classification=request.data["classification"],
                             user=user,
                             photo=photo)
-        return Response({"response": "mask was successfully created"})
+        model.mask_set.add(mask)
+        return Response(data={"response": "mask was successfully created"}, status=status.HTTP_201_CREATED)
 
 
 class GetAllMasks(generics.ListAPIView):
