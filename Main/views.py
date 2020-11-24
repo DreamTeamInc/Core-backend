@@ -239,27 +239,22 @@ def use_UF_model(request, user_id, photo_id, model_id):
 
 @api_view(['GET'])
 def create_non_default_UF_model(request, user_id, name):
-    # user_id = 0
-    # if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
-    #     user_id = request.COOKIES['token']
-    # else:
-    #     return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
     user = User.objects.get(id=user_id)
 
     unique = Model.objects.filter(user=user, name=name).count() == 0
     if not unique:
         return Response(data={"error":"this name already exists"})
 
-    
-    # uv = 0
-    # if model.model:
-    #     print("TRAINED model")
-    #     with open(model.name, 'wb') as modelfile:
-    #         modelfile.write(model.model)
-    #     uv = UV_Model(model=modelfile.name)
-    # else:
-    #     print("empty model")
-    uv = UV_Model()
+    default_model = get_object_or_404(Model, is_default=True, kind=2)
+    uv = 0
+    if default_model.model:
+        print("TRAINED model")
+        with open(default_model.name, 'wb') as modelfile:
+            modelfile.write(default_model.model)
+        uv = UV_Model(model=default_model.name)
+    else:
+        print("empty model")
+        uv = UV_Model()
 
     active_model = get_object_or_404(Model, user=user, is_active=True, kind=2)
     active_masks = active_model.mask_set.all()
@@ -317,6 +312,79 @@ def create_non_default_UF_model(request, user_id, name):
     print(len(model.model))
     model.save()
     return Response(data={"message":"model has successfully retrained"}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def retrain_default_UF_model(request, user_id):
+
+    user = User.objects.get(id=user_id)
+
+    default_model = get_object_or_404(Model, is_default=True, kind=2)
+    uv = 0
+    if default_model.model:
+        print("TRAINED model")
+        with open(default_model.name, 'wb') as modelfile:
+            modelfile.write(default_model.model)
+        uv = UV_Model(model=default_model.name)
+    else:
+        print("empty model")
+        uv = UV_Model()
+
+    active_model = get_object_or_404(Model, user=user, is_active=True, kind=2)
+    active_masks = active_model.mask_set.all()
+    mask_ids = []
+    for mask in active_masks:
+        mask_ids.append(mask.id)
+    masks = []
+    photos = []
+    jsons = []
+    for mask_id in mask_ids:
+
+        mask = get_object_or_404(Mask, id=mask_id)
+        with open("mask{0}.png".format(mask_id), 'wb') as maskfile:
+            maskfile.write(mask.mask)
+        # was an error: could not find a format to read the specified file in single-image mode
+        im = Image.open("mask{0}.png".format(mask_id))
+        a = np.asarray(im)
+        print(len(a.shape))
+        if len(a.shape) == 3:
+            a = a[:,:,0]
+        print(a.shape)
+        masks.append(a)
+        print(np.unique(a))
+        
+        photo = get_object_or_404(Photo, id=mask.photo.id)
+        with open("photo{0}.png".format(photo.id), 'wb') as photofile:
+            photofile.write(photo.photo)
+            photos.append(io.imread(photofile.name))
+            print(photos[-1].shape)
+
+        print(mask.classification)
+        classification = mask.classification.replace("'", '"')
+        jsons.append(json.loads(classification))
+    print("hey2")
+    # photos = []
+    # photos.append(io.imread("1012473.jpeg"))
+    # print(photos[-1].shape)
+    # masks = []
+    # a = np.load("mask.npz")['data']
+    # print(a)
+    # masks.append(a)
+    # print(masks[-1].shape)
+    # jsons = [
+    #     {
+    #         "0" : "Отсутствует",
+    #         "1" : "Насыщенное"
+    #     }
+    # ]
+    uv.retrain(photos, masks, jsons)
+    print("hey3")
+    uv.save_model(default_model.name)
+    with open(default_model.name, 'rb') as f:
+        default_model.model = f.read()
+    print(len(default_model.model))
+    default_model.save()
+    return Response(data={"message":"default model has successfully retrained"}, status=status.HTTP_200_OK)
 
 
 class AllWells(generics.ListAPIView):
