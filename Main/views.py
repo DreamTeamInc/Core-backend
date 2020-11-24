@@ -120,23 +120,13 @@ def create_mask_daylight(request):
     else:
         return Response(data={"error":"no mask parameter or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
     byte_mask = mask.read() # if too big image use this: for chunk in photo.chunks():   ...
-    classification = {
-        "0" : "Аргиллит",
-        "1" : "Алевролит глинистый",
-        "2" : "Песчаник",
-        "3" : "Другое"
-    }
     try:
         googleDrive.delete(mask.name.replace("mask", "photo"))
     except:
         pass
-    photo_id, user_id, model_id = mask.name[4:-4].split('_')
-    user = get_object_or_404(User, id=user_id)
-    photo = get_object_or_404(Photo, id=photo_id)
-    model = get_object_or_404(Model, id=model_id)
-    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=byte_mask)
-    mask.model.add(model)
-    return Response(data={"message":"mask {0} is successfully sent".format(mask.id)}, status=status.HTTP_200_OK)
+    with open(mask.name, 'wb') as f:
+        f.write(byte_mask)
+    return Response(data={"message":"mask is successfully sent"}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -162,15 +152,22 @@ def use_daylight_model(request, user_id, photo_id, model_id):
 
 @api_view(['GET'])
 def get_mask_from_daylight_model(request, user_id, photo_id, model_id):
+    with open("mask{0}_{1}_{2}.png".format(photo_id, user_id, model_id), 'rb') as maskfile: 
+        byte_mask = maskfile.read()
     user = get_object_or_404(User, id=user_id)
     model = get_object_or_404(Model, id=model_id)
     photo = get_object_or_404(Photo, id=photo_id)
-    mask = Mask.objects.filter(user=user, photo=photo, model=model).order_by("-id")
-    if mask.count() > 0:
-        mask = mask[0]
-        serializer = MaskSerializer(mask, many=False)
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
-    return Response(data={"error":"no mask yet"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    classification = {
+        "0" : "Аргиллит",
+        "1" : "Алевролит глинистый",
+        "2" : "Песчаник",
+        "3" : "Другое"
+    }
+    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=byte_mask)
+    mask.model.add(model)
+    serializer = MaskSerializer(mask)
+    Mask.objects.filter(id=mask.id).delete()
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
