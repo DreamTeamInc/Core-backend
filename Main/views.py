@@ -20,6 +20,14 @@ from .DataSienceDaylight import googleDrive
 
 class CreateUser(generics.CreateAPIView):
     serializer_class = UserDetailSerializer
+    def post(self, request):  
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            user = User.objects.get(email=serializer.data["email"])
+            Model.objects.create(user=user, is_active=True, kind=2, is_default=False)
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GetAllUsers(generics.ListAPIView):
