@@ -230,33 +230,36 @@ def use_UF_model(request, photo_id, model_id):
     # return Response("Good")
 
 
-@api_view(['PUT'])
-def retrain_UF_model(request, model_id):
+@api_view(['GET'])
+def create_non_default_UF_model(request, user_id, name):
     # user_id = 0
     # if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
     #     user_id = request.COOKIES['token']
     # else:
     #     return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
-    # user = User.objects.get(id=user_id)
-    model = Model.objects.filter(id=model_id)
-    if model.count() == 0:
-        return Response(data={"error":"no model with id {0}".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
-    model = model[0]
-    if model.kind != 2:
-        return Response(data={"error":"model {0} is not ultraviolet".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
+    user = User.objects.get(id=user_id)
 
-    uv = 0
-    if model.model:
-        print("TRAINED model")
-        with open(model.name, 'wb') as modelfile:
-            modelfile.write(model.model)
-        uv = UV_Model(model=modelfile.name)
-    else:
-        print("empty model")
+    unique = Model.objects.filter(user=user, name=name).count() == 0
+    if not unique:
+        return Response(data={"error":"this name already exists"})
+
+    model = Model.objects.create(user=user, kind=2, is_default=False, name=name)
+    
+    # uv = 0
+    # if model.model:
+    #     print("TRAINED model")
+    #     with open(model.name, 'wb') as modelfile:
+    #         modelfile.write(model.model)
+    #     uv = UV_Model(model=modelfile.name)
+    # else:
+    #     print("empty model")
     uv = UV_Model()
 
-    mask_ids = request.POST.getlist('masks')
-    # mask_id = request.data["masks"]
+    active_model = get_object_or_404(Model, user=user, is_active=True, kind=2)
+    active_masks = active_model.mask_set.all()
+    mask_ids = []
+    for mask in active_masks:
+        mask_ids.append(mask.id)
     masks = []
     photos = []
     jsons = []
