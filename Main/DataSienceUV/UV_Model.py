@@ -22,6 +22,8 @@ class UV_Model(object):
             self.etc = ExtraTreesClassifier(criterion='gini',min_samples_split=3) #warm_start=True
             self.etc.fit(self.features,self.y)
         else:
+            self.features = pd.read_csv('Main/DataSienceUV/features.csv')
+            self.y = uv_data['segment_value']
             self.etc = load(model)
     
     def __histogram_equalize(self,img):
