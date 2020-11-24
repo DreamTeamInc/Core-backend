@@ -271,6 +271,7 @@ def create_non_default_UF_model(request, user_id, name):
         # was an error: could not find a format to read the specified file in single-image mode
         im = Image.open("mask{0}.png".format(mask_id))
         a = np.asarray(im)
+        a = a[:,:,0]
         print(a.shape)
         masks.append(a)
         print(np.unique(a))
