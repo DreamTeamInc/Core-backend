@@ -340,10 +340,11 @@ class WellInLocation(generics.ListAPIView):
 class CreateMask(generics.CreateAPIView):
     serializer_class = MaskSerializer
     def post(self, request):
+        user = get_object_or_404(User, id=request.data["user"])
         try:
-            model = get_object_or_404(Model, is_active=True, kind=2)
+            model = get_object_or_404(Model, user=user, is_active=True, kind=2)
         except:
-            return Response(data={"error": "there is no active ultraviolet model or it isn't the only one"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={"error": "this user has no active ultraviolet model or it isn't the only one"}, status=status.HTTP_400_BAD_REQUEST)
         mask = ''
         if 'mask' in request.FILES:
             mask = request.FILES['mask']
@@ -353,7 +354,6 @@ class CreateMask(generics.CreateAPIView):
         if not serializer.is_valid():
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         byte_mask = mask.read()
-        user = get_object_or_404(User, id=request.data["user"])
         photo = get_object_or_404(Photo, id=request.data["photo"])
         mask = Mask.objects.create(mask=byte_mask,
                             classification=request.data["classification"],
