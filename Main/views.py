@@ -152,10 +152,25 @@ def use_daylight_model(request, user_id, photo_id, model_id):
     photo = photo[0]
     if model.kind != photo.kind:
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
+    if photo.kind != 1:
+        return Response({"error":"photo is not daylight"})
     with open("photo{0}_{1}_{2}.png".format(photo.id, user_id, model_id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         googleDrive.upload(imagefile.name, "photo_predict")
     return Response(data={"message":"photo is getting segmented right now. Please wait a little."}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_mask_from_daylight_model(request, user_id, photo_id, model_id):
+    user = get_object_or_404(User, id=user_id)
+    model = get_object_or_404(Model, id=model_id)
+    photo = get_object_or_404(Photo, id=photo_id)
+    mask = Mask.objects.filter(user=user, photo=photo, model=model).order_by("-id")
+    if mask.count() > 0:
+        mask = mask[0]
+        serializer = MaskSerializer(mask, many=False)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+    return Response(data={"error":"no mask yet"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -171,6 +186,8 @@ def use_UF_model(request, user_id, photo_id, model_id):
     photo = photo[0]
     if model.kind != photo.kind:
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
+    if photo.kind != 2:
+        return Response({"error":"photo is not ultraviolet!"})
     with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
         imagefile.write(photo.photo)
         uv = 0
@@ -475,7 +492,11 @@ def all_masks_from_active_model(request, user_id):
 
 @api_view(['DELETE'])
 def del_all_masks_from_active_model(request, user_id): 
-    masks = Mask.objects.filter(model__user=user_id, model__is_active=True, model__kind=2).delete()
+    masks = Mask.objects.filter(model__user=user_id, model__is_active=True, model__kind=2)
+    model = get_object_or_404(Model, user=user_id, is_active=True)
+    for mask in masks:
+        model.mask_set.remove(mask)
+    serializer = MaskDetailSerializer(masks, many=True)
     return Response(data={"message":"masks successfully deleted"}, status=status.HTTP_204_NO_CONTENT)
 
 
