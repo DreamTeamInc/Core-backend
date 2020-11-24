@@ -140,12 +140,7 @@ def create_mask_daylight(request):
 
 
 @api_view(['GET'])
-def use_daylight_model(request, photo_id, model_id):
-    user_id = 0
-    if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
-        user_id = request.COOKIES['token']
-    else:
-        return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+def use_daylight_model(request, user_id, photo_id, model_id):
     user = User.objects.get(id=user_id)
     model = Model.objects.filter(id=model_id)
     if model.count() == 0:
@@ -164,12 +159,7 @@ def use_daylight_model(request, photo_id, model_id):
 
 
 @api_view(['GET'])
-def use_UF_model(request, photo_id, model_id):
-    user_id = 0
-    if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
-        user_id = request.COOKIES['token']
-    else:
-        return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+def use_UF_model(request, user_id, photo_id, model_id):
     user = User.objects.get(id=user_id)
     model = Model.objects.filter(id=model_id)
     if model.count() == 0:
@@ -243,7 +233,6 @@ def create_non_default_UF_model(request, user_id, name):
     if not unique:
         return Response(data={"error":"this name already exists"})
 
-    model = Model.objects.create(user=user, kind=2, is_default=False, name=name)
     
     # uv = 0
     # if model.model:
@@ -304,6 +293,7 @@ def create_non_default_UF_model(request, user_id, name):
     # ]
     uv.retrain(photos, masks, jsons)
     print("hey3")
+    model = Model.objects.create(user=user, kind=2, is_default=False, name=name)
     uv.save_model(model.name)
     with open(model.name, 'rb') as f:
         model.model = f.read()
