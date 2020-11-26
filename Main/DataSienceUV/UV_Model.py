@@ -24,8 +24,8 @@ class UV_Model(object):
     else:
       self.etc = load(model)
 
-  def __histogram_equalize(self,img): 
-    img_cdf, bin_centers = exposure.cumulative_distribution(img) 
+  def __histogram_equalize(self,img):
+    img_cdf, bin_centers = exposure.cumulative_distribution(img)
     return np.interp(img, bin_centers, img_cdf)
 
   def __get_features(self,photo,mask,segment_num):
@@ -44,10 +44,10 @@ class UV_Model(object):
     return features
 
   def __segment_preprocessing(self,photo,mask,segment_num):
-    hsv_features = self.__get_features(rgb2hsv(photo),mask,segment_num) 
-    rgb_features = self.__get_features(self.__histogram_equalize(photo),mask,segment_num)      
+    hsv_features = self.__get_features(rgb2hsv(photo),mask,segment_num)
+    rgb_features = self.__get_features(self.__histogram_equalize(photo),mask,segment_num)
     vector = np.concatenate((hsv_features,rgb_features))
-    return vector 
+    return vector
 
   def __get_important_features(self,features):
     discarded_features = np.load('Main/DataSienceUV/not_importance_features.npy')
@@ -59,7 +59,7 @@ class UV_Model(object):
     features_arr = []
     if json_data == None:
       unique_segments = list(OrderedDict.fromkeys(mask.ravel()))
-    else: 
+    else:
       unique_segments = list(map(int,json_data.keys()))
       y = []
     for i in unique_segments:
@@ -95,15 +95,19 @@ class UV_Model(object):
     semantic_seg = self.__to_semantic_segmentation(mask,predicts)
     return semantic_seg
 
-  def retrain(self,photo,mask,json_data):
-    features = self.__photo_preprocessing(photo,mask,json_data)
-    y = features['y']
-    features.drop(['y'],axis='columns', inplace=True)
-    #self.etc.fit(features,y)
-    for i in range(features.shape[0]):
-      self.features.loc[self.features.shape[0]] = features.loc[i].tolist()
-      self.y.loc[self.y.shape[0]] = y.loc[i]
-    self.etc.fit(self.features,self.y)
+  def retrain(self,photos,masks,jsons):
+    for i in photos.shape[0]:
+      photo = photos[i]
+      mask = masks[i]
+      json_data = jsons[i]
+      features = self.__photo_preprocessing(photo, mask, json_data)
+      y = features['y']
+      features.drop(['y'], axis='columns', inplace=True)
+      #self.etc.fit(features,y)
+      for i in range(features.shape[0]):
+        self.features.loc[self.features.shape[0]] = features.loc[i].tolist()
+        self.y.loc[self.y.shape[0]] = y.loc[i]
+    self.etc.fit(self.features, self.y)
 
-  def save_model(name):
-    dump(etc,name)
+  def save_model(self, name):
+    return dump(self.etc, name)

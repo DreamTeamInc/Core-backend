@@ -30,11 +30,12 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG')
 
-ALLOWED_HOSTS = ['code-backend.herokuapp.com', '127.0.0.1', 'localhost:3000']
+ALLOWED_HOSTS = ['185.243.215.18', 'code-backend.herokuapp.com', '127.0.0.1', 'localhost:3000']
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://core-frontend.herokuapp.com'
+    'https://core-frontend.herokuapp.com',
+    'http://185.243.215.18:8080'
 ]
 
 CORS_ALLOW_METHODS = [
@@ -48,7 +49,8 @@ CORS_ALLOW_METHODS = [
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'https://core-frontend.herokuapp.com'
+    'https://core-frontend.herokuapp.com',
+    'http://185.243.215.18:8080'
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -68,8 +70,7 @@ INSTALLED_APPS = [
     'Main',
     'corsheaders',
     'rest_framework',
-    'rest_framework.authtoken',
-    'djoser',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -137,6 +138,9 @@ DATABASES = {
 # }
 
 
+MAX_UPLOAD_SIZE = "10242880"
+
+
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
@@ -161,6 +165,9 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
 }
 
 # Internationalization

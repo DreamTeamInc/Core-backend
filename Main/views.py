@@ -4,17 +4,18 @@ from PIL import Image
 from skimage import io
 import io as IO
 from matplotlib import pyplot as plt
-from django.http import JsonResponse, HttpResponse
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from .models import User, Photo, Mask, Model
 from .serializers import *
 from .DataSienceUV.UV_Model import UV_Model
 from App.settings import BASE_DIR
-# from .DataSienceDaylight.model import DayModel
+from .DataSienceDaylight import googleDrive
 
 
 class CreateUser(generics.CreateAPIView):
@@ -69,79 +70,151 @@ class CreatePhoto(generics.CreateAPIView):
 
 class GetAllPhotos(generics.ListAPIView):
     serializer_class = PhotoSerializer
-    queryset = Photo.objects.all()
-    
+    filterset_fields = ['kind', 'location', 'well']
+
+    def get_queryset(self):
+        queryset = Photo.objects.all()
+        tagged = self.request.query_params.get('tagged', None)
+        user_id = 0
+        if 'token' in self.request.COOKIES and  self.request.COOKIES['token'] != 'None':
+            user_id = self.request.COOKIES['token']
+        # else:
+        #     raise ValueError("No token")
+        if tagged is not None:
+            if tagged == "Размеченные":
+                queryset = queryset.filter(mask__isnull=False).distinct()
+            elif tagged == "Неразмеченные":
+                queryset = queryset.filter(mask__isnull=True)
+            elif tagged == "Размеченные мной":
+                queryset = queryset.filter(mask__user=user_id).distinct()
+            elif tagged == "Неразмеченные мной":
+                queryset = queryset.filter(~Q(mask__user=user_id))
+        return queryset
+    # def get(self, request):
+    #     try:
+    #         queryset = self.get_queryset()
+    #     except ValueError as e:
+    #         return Response(data={"error:":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+    #     serializer = self.serializer_class(queryset, many=True)
+    #     return Response(data=serializer.data, status=status.HTTP_200_OK)
+
 
 class PutGetDeleteOnePhoto(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PhotoSerializer
     queryset = Photo.objects.all()
-    # def get(self, request, pk):
-    #     photos = Photo.objects.filter(id = pk)
-    #     # if len(photos) == 0:
-    #     #     return Response({"error": "no photo with id {0}".format(pk)})
-    #     photo = photos[0]
-    #     # with open("Main/media/photos/photo{0}.jpg".format(photo.id), 'wb') as imagefile:
-    #     #     imagefile.write(photo.photo)
-    #     uv = UV_Model()
-    #     f = io.imread("Main/media/photos/photo14.jpg".format(photo.id))
-    #     mask = uv.predict(f)
-    #     classifications = { 
-    #         "100" : "Отсутствует",
-    #         "200" : "Насыщенное",
-    #         "300" : "Карбонатное"
-    #     }
-    #     print("hey")
-    #     io.imshow(mask)
-    #     plt.show()
-    #     # root = str(BASE_DIR) + "\Main\media\photos\photo{0}.jpg".format(photo.id)
-    #     # response = HttpResponse("<img src='{0}'>".format(root))
-    #     # return response
-    #     return Response("Good")
 
-        
-def testDayModel(request):
-    # print("Hey1")
-    # model = DayModel("Main\\DataSienceDaylight\\segmentator_sab.pt")
-    # print("Hey2")
-    # res = model.predict("Main\\DataSienceDaylight\\1006722.jpg")
-    # print("Hey3")
-    # io.imshow(res)
-    return Response("Good")
+
+
+@api_view(['POST'])
+def create_mask_daylight(request): 
+    mask = ''
+    if "mask" in request.FILES:
+        mask = request.FILES['mask']
+    else:
+        return Response(data={"error":"no mask parameter or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
+    byte_mask = mask.read() # if too big image use this: for chunk in photo.chunks():   ...
+    classification = {
+        0 : "Аргиллит",
+        1 : "Алевролит глинистый",
+        2 : "Песчаник",
+        3 : "Другое"
+    }
+    try:
+        googleDrive.delete(mask.name.replace("mask", "photo"))
+    except:
+        pass
+    photo_id, user_id, model_id = mask.name[4:-4].split('_')
+    user = get_object_or_404(User, id=user_id)
+    photo = get_object_or_404(Photo, id=photo_id)
+    model = get_object_or_404(Model, id=model_id)
+    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=byte_mask)
+    mask.model.add(model)
+    return Response(data={"message":"mask {0} is successfully sent".format(mask.id)}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
-def useUFmodel(request, user_id, pk, model_id):
-    user = get_object_or_404(User, id=user_id)
-    model = get_object_or_404(Model, id=model_id)
-    photo = get_object_or_404(Photo, id = pk)
+def use_daylight_model(request, photo_id, model_id):
+    user_id = 0
+    if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
+        user_id = request.COOKIES['token']
+    else:
+        return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+    user = User.objects.get(id=user_id)
+    model = Model.objects.filter(id=model_id)
+    if model.count() == 0:
+        return Response(data={"error":"no model with id {0}".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
+    model = model[0]
+    photo = Photo.objects.filter(id=photo_id)
+    if photo.count() == 0:
+        return Response(data={"error":"no photo with id {0}".format(photo_id)}, status=status.HTTP_400_BAD_REQUEST)
+    photo = photo[0]
     if model.kind != photo.kind:
         return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
-    with open("Main/media/photos/photo{0}.jpg".format(photo.id), 'wb') as imagefile:
+    with open("photo{0}_{1}_{2}.png".format(photo.id, user_id, model_id), 'wb') as imagefile:
         imagefile.write(photo.photo)
-    uv = UV_Model()
-    f = io.imread("Main/media/photos/photo{0}.jpg".format(photo.id))
-    mask = uv.predict(f)
-    classification = { 
-        "100" : "Отсутствует",
-        "200" : "Насыщенное",
-        "300" : "Карбонатное"
-    }
-    #mask = np.load("Main/uf.npz")['data']
-    mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
-    mask_rgb[:,:,0] = mask
-    mask_rgb[:,:,1] = mask
-    mask_rgb[:,:,2] = mask
-    im = Image.fromarray(mask_rgb, 'RGB')
-    # im.save("image.png", "png")
-    # im = Image.open('image.png')
-    # a = np.asarray(im)
-    b = IO.BytesIO()
-    im.save(b, 'png')
-    im_bytes = b.getvalue()
-    mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
-    mask.model.add(model)
-    serializer = MaskSerializer(mask)
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
+        googleDrive.upload(imagefile.name, "photo_predict")
+    return Response(data={"message":"photo is getting segmented right now. Please wait a little."}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def use_UF_model(request, photo_id, model_id):
+    user_id = 0
+    if 'token' in request.COOKIES and  request.COOKIES['token'] != 'None':
+        user_id = request.COOKIES['token']
+    else:
+        return Response(data={"error":"no token"}, status=status.HTTP_401_UNAUTHORIZED)
+    user = User.objects.get(id=user_id)
+    model = Model.objects.filter(id=model_id)
+    if model.count() == 0:
+        return Response(data={"error":"no model with id {0}".format(model_id)}, status=status.HTTP_400_BAD_REQUEST)
+    model = model[0]
+    photo = Photo.objects.filter(id=photo_id)
+    if photo.count() == 0:
+        return Response(data={"error":"no photo with id {0}".format(photo_id)}, status=status.HTTP_400_BAD_REQUEST)
+    photo = photo[0]
+    if model.kind != photo.kind:
+        return Response({"error":"no model {0} has {1} kind, while photo {2} - {3}".format(model.id, model.kind, photo.id, photo.kind)})
+    with open("photo{0}.png".format(photo.id), 'wb') as imagefile:
+        imagefile.write(photo.photo)
+        uv = UV_Model()
+    #     f = io.imread(imagefile.name)
+    # mask = uv.predict(f)
+    new_model = uv.save_model(model.name)
+    with open(new_model[0], 'rb') as f:
+        byte_model = f.read()
+    model.model = byte_model
+    print(model)
+    model.save()
+    # classification = { 
+    #     "100" : "Отсутствует",
+    #     "200" : "Насыщенное",
+    #     "300" : "Карбонатное"
+    # }
+    # #mask = np.load("Main/uf.npz")['data']
+    # mask_rgb = np.zeros([mask.shape[0], mask.shape[1],3], dtype=np.uint8)
+    # mask_rgb[:,:,0] = mask
+    # mask_rgb[:,:,1] = mask
+    # mask_rgb[:,:,2] = mask
+    # im = Image.fromarray(mask_rgb, 'RGB')
+    # # im.show
+    # # im.save("image.png", "png")
+    # # im = Image.open('image.png')
+    # # a = np.asarray(im)
+    # b = IO.BytesIO()
+    # im.save(b, 'png')
+    # im_bytes = b.getvalue()
+    # mask = Mask.objects.create(user=user, photo=photo, classification=classification, mask=im_bytes)
+    # mask.model.add(model)
+    # # with open("mask{0}.png".format(photo.id), "wb") as f:
+    # #     f.write(mask.mask)
+    # # f = io.imread(f.name)
+    # # print(f.shape)
+    # # classes = np.unique(f)
+    # # print(classes)
+    # serializer = MaskSerializer(mask)
+    # return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    return Response("Good")
 
 
 class AllWells(generics.ListAPIView):
@@ -174,6 +247,23 @@ class WellInLocation(generics.ListAPIView):
 
 class CreateMask(generics.CreateAPIView):
     serializer_class = MaskSerializer
+    def post(self, request):
+        mask = ''
+        if 'mask' in request.FILES:
+            mask = request.FILES['mask']
+        else:
+             return Response(data={"error":"no mask field or no file in request"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(data=request.data)
+        if not serializer.is_valid():
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        byte_mask = mask.read()
+        user = get_object_or_404(User, id=request.data["user"])
+        photo = get_object_or_404(Photo, id=request.data["photo"])
+        Mask.objects.create(mask=byte_mask,
+                            classification=request.data["classification"],
+                            user=user,
+                            photo=photo)
+        return Response({"response": "mask was successfully created"})
 
 
 class GetAllMasks(generics.ListAPIView):
@@ -202,7 +292,7 @@ class GetAllModelsByUser(generics.ListAPIView):
         user = User.objects.filter(id = pk)
         if len(user) == 0:
             return Response({"error": "there is no user with id {0}".format(pk)})
-        models = Model.objects.filter(user=pk)
+        models = Model.objects.filter(Q(user=pk) | Q(is_default=True))
         if len(models) == 0:
             return Response({"error": "user with id {0} has no models".format(pk)})
         serializer = ModelSerializer(models, many=True)
@@ -250,14 +340,15 @@ def addMask(request, user_id, pk):
     mask = Mask.objects.filter(id=pk)
     if mask.count() == 0:
         return Response({"error":"no mask with id {0}".format(pk)})
-    model = Model.objects.filter(is_active=True, user=user_id)
+    kind = mask[0].photo.kind
+    model = Model.objects.filter(is_active=True, user=user_id, kind=kind)
     if model.count() == 0:
-        return Response({"error":"user {0} has no active model".format(user_id)})
+        return Response({"error":"user {0} has no active models with kind {1}".format(user_id, kind)})
     if model.count() > 1:
-        return Response({"error":"user {0} has more than one active models".format(user_id)})
+        return Response({"error":"user {0} has more than one active models with kind {1}".format(user_id, kind)})
     model[0].mask_set.add(mask[0])
     serializer = ModelSerializer(model[0], many=False)
-    return Response(data=serializer.data)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['PUT'])
@@ -268,14 +359,22 @@ def removeMask(request, user_id, pk):
     mask = Mask.objects.filter(id=pk)
     if mask.count() == 0:
         return Response({"error":"no mask with id {0}".format(pk)})
-    model = Model.objects.filter(is_active=True, user=user_id)
+    kind = mask[0].photo.kind
+    model = Model.objects.filter(is_active=True, user=user_id, kind=kind)
     if model.count() == 0:
-        return Response({"error":"user {0} has no active model".format(user_id)})
+        return Response({"error":"user {0} has no active models with kind {1}".format(user_id, kind)})
     if model.count() > 1:
-        return Response({"error":"user {0} has more than one active models".format(user_id)})
+        return Response({"error":"user {0} has more than one active models with kind {1}".format(user_id, kind)})
     model[0].mask_set.remove(mask[0])
     serializer = ModelSerializer(model[0], many=False)
-    return Response(data=serializer.data)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_active_model(request, user_id): 
+    models = Model.objects.filter(is_active=True, user=user_id)
+    serializer = ModelSerializer(models, many=True)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['PUT'])
