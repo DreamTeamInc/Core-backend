@@ -42,4 +42,17 @@ class ModelSerializer(serializers.ModelSerializer):
     mask_set = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     class Meta:
         model = Model
-        fields = '__all__'
+        exclude = ["model"]
+
+
+class PhotoShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = ["location", "well", "depth"]
+
+
+class MaskDetailSerializer(serializers.ModelSerializer):
+    photo = PhotoShortSerializer(many=False)
+    class Meta:
+        model = Mask
+        fields = ["id", "user", "photo", "classification", "mask", "likes", "model", "users_who_like", "photo"]
