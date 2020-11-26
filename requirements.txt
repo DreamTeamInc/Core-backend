@@ -34,7 +34,7 @@ google-api-core==1.23.0
 google-auth==1.23.0
 google-auth-httplib2==0.0.4
 googleapis-common-protos==1.52.0
-httplib2==0.15.0
+httplib2==0.18.0
 protobuf==3.13.0
 pyasn1==0.4.8
 rsa==4.6
